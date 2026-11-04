@@ -1,0 +1,6 @@
+# Données personnelles : ne jamais publier
+*.xlsx
+*.xls
+*.csv
+suivi-sante-*.json
+suivi-depenses-sante.json
