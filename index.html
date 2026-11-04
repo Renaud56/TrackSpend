@@ -97,6 +97,7 @@
     .item > span { display: flex; }
     .item-top { align-items: flex-start; justify-content: space-between; gap: 12px; }
     .item-title { min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+    .item-sub { display: block; margin-top: 2px; color: var(--muted); font-size: .84rem; font-weight: 500; }
     .item-amount { font-weight: 800; white-space: nowrap; }
     .item-meta { flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: .8rem; }
     .person { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: .74rem; font-weight: 700; }
@@ -372,8 +373,8 @@
       </div>
 
       <div class="card">
-        <h2>Types de soin</h2>
-        <p class="card-desc">Proposés dans le champ « Motif » d’un soin (la saisie libre reste possible).</p>
+        <h2>Types d’acte</h2>
+        <p class="card-desc">Proposés dans le champ « Type d’acte » d’un soin (la saisie libre reste possible).</p>
         <ul class="people" id="motifTypeList"></ul>
         <form class="inline-form" id="addMotifForm">
           <input id="addMotifInput" maxlength="120" placeholder="Nouveau type" aria-label="Nouveau type de soin" autocomplete="off">
@@ -404,6 +405,12 @@
           <label class="btn btn-ghost file-btn">Restaurer une sauvegarde<input type="file" id="restoreFile" accept=".json,application/json" hidden></label>
         </div>
       </div>
+
+      <div class="card">
+        <h2>Tout supprimer</h2>
+        <p class="card-desc">Efface tous les soins et toutes les personnes, ici et sur Google Drive (les types d’acte sont conservés). Pensez à exporter une sauvegarde avant.</p>
+        <button type="button" class="btn btn-danger btn-block" id="wipeBtn">Tout supprimer</button>
+      </div>
     </section>
   </main>
 
@@ -430,9 +437,13 @@
       </div>
 
       <div class="field motif-field">
+        <label for="fType">Type d’acte</label>
+        <input id="fType" maxlength="120" autocomplete="off" placeholder="Ex. : généraliste, kiné…" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="typeSuggest">
+        <div class="suggest" id="typeSuggest" role="listbox" aria-label="Types d’acte" hidden></div>
+      </div>
+      <div class="field">
         <label for="fMotif">Motif</label>
-        <input id="fMotif" maxlength="120" autocomplete="off" placeholder="Choisir ou saisir un motif" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="motifSuggest">
-        <div class="suggest" id="motifSuggest" role="listbox" aria-label="Types de soin" hidden></div>
+        <input id="fMotif" maxlength="120" autocomplete="off" placeholder="Ex. : séances genou, vaccin…">
       </div>
       <div class="field">
         <span class="field-label" id="patientLabel">Soin pour</span>
@@ -658,17 +669,17 @@
       const day = 86400000;
       const people = ['Camille', 'Louis', 'Emma', 'Léo', 'Compte joint'].map((name, i) => ({ id: `p${i + 1}`, name, updatedAt: now }));
       const care = [
-        ['Médecin généraliste', 30, .7], ['Pédiatre', 35, .7], ['Dentiste – détartrage', 60, .7], ['Dentiste – couronne', 520, .2],
-        ['Ostéopathe', 60, 0], ['Kinésithérapie (5 séances)', 82, .6], ['Pharmacie', 24.6, .65], ['Ophtalmologue', 55, .7],
-        ['Lunettes', 380, .02], ['Échographie', 95, .7], ['Analyses laboratoire', 42.3, .6], ['Dermatologue', 50, .7],
-        ['Orthophoniste', 36, .6], ['Radiologie', 48, .7], ['Psychologue', 55, 0]
+        ['Médecin généraliste', 'Consultation', 30, .7], ['Pédiatre', 'Vaccin', 35, .7], ['Dentiste', 'Détartrage', 60, .7], ['Dentiste', 'Couronne', 520, .2],
+        ['Ostéopathe', '', 60, 0], ['Kinésithérapeute', '5 séances genou', 82, .6], ['Pharmacie', '', 24.6, .65], ['Ophtalmologue', 'Contrôle annuel', 55, .7],
+        ['Opticien / lunettes', 'Lunettes', 380, .02], ['Échographie', '', 95, .7], ['Analyses laboratoire', 'Bilan sanguin', 42.3, .6], ['Dermatologue', '', 50, .7],
+        ['Orthophoniste', 'Bilan', 36, .6], ['Radiologie', 'Radio du poignet', 48, .7], ['Psychologue', '', 55, 0]
       ];
       const notes = ['Feuille de soins envoyée à la sécu', 'Dépassement d’honoraires', 'Relancer la mutuelle', 'Devis transmis à la mutuelle'];
       const total = 60;
       const start = now - 600 * day;
       const expenses = [];
       for (let i = 0; i < total; i++) {
-        const [motif, base, rate] = care[Math.floor(rnd() * care.length)];
+        const [type, motif, base, rate] = care[Math.floor(rnd() * care.length)];
         const date = isoDate(new Date(start + Math.round(i / (total - 1) * 590) * day + Math.floor(rnd() * 5) * day));
         const amount = base < 100 ? base : round2(base * (0.9 + rnd() * 0.25));
         const payer = ['p1', 'p2', 'p5'][Math.floor(rnd() * 3)];
@@ -690,7 +701,7 @@
           reversement = 'todo';
         }
         expenses.push({
-          id: `t${i + 1}`, motif, patient: `p${1 + Math.floor(rnd() * 4)}`, payer, date, amount, secu, transmission,
+          id: `t${i + 1}`, type, motif, patient: `p${1 + Math.floor(rnd() * 4)}`, payer, date, amount, secu, transmission,
           mutuelle, mutuelleDate, reversement, notes: i % 7 === 0 ? notes[i % notes.length] : '', closed: false,
           createdAt: now, updatedAt: now
         });
@@ -747,7 +758,7 @@
       if (state.person && e.patient !== state.person) return false;
       const query = norm(state.search);
       if (!query) return true;
-      return norm([e.motif, e.notes, personName(e.patient), personName(e.payer), e.amount, formatDate(e.date)].join(' ')).includes(query);
+      return norm([e.type, e.motif, e.notes, personName(e.patient), personName(e.payer), e.amount, formatDate(e.date)].join(' ')).includes(query);
     }
 
     /* ---------- Rendu ---------- */
@@ -773,8 +784,10 @@
       const canReverse = withActions && e.reversement === 'todo';
       const foot = (remaining === null ? '' : `<span class="item-rest">Reste à charge<b>${euro(remaining)}</b></span>`)
         + (canReverse ? `<button type="button" class="item-action" data-reverse="${escapeHtml(e.id)}">${icon('i-check')}Marquer reversé</button>` : '');
-      return `<div class="item" data-id="${escapeHtml(e.id)}" tabindex="0" aria-label="${escapeHtml(`${e.motif || 'Sans motif'}, ${euro(e.amount)}`)}">
-        <span class="item-top"><span class="item-title">${escapeHtml(e.motif || 'Sans motif')}</span><span class="item-amount">${euro(e.amount)}</span></span>
+      const title = e.type || e.motif || 'Sans motif';
+      const subtitle = e.type && e.motif ? `<span class="item-sub">${escapeHtml(e.motif)}</span>` : '';
+      return `<div class="item" data-id="${escapeHtml(e.id)}" tabindex="0" aria-label="${escapeHtml(`${[e.type, e.motif].filter(Boolean).join(' – ') || 'Sans motif'}, ${euro(e.amount)}`)}">
+        <span class="item-top"><span class="item-title">${escapeHtml(title)}${subtitle}</span><span class="item-amount">${euro(e.amount)}</span></span>
         <span class="item-meta">${patient ? `<span class="person">${escapeHtml(patient)}</span>` : ''}<span>${formatDate(e.date)}</span>${payer ? `<span>· payé par ${escapeHtml(payer)}</span>` : ''}</span>
         <span class="steps">${stepsHtml(e)}</span>
         ${e.notes ? `<span class="item-notes">${icon('i-note')}<span>${escapeHtml(e.notes)}</span></span>` : ''}
@@ -873,7 +886,7 @@
     function renderMotifTypes() {
       const motifs = sortedMotifs();
       $('motifTypeList').innerHTML = motifs.length ? motifs.map(m => {
-        const used = data.expenses.filter(e => norm(e.motif) === norm(m.name)).length;
+        const used = data.expenses.filter(e => norm(e.type) === norm(m.name)).length;
         return `<li>
           <input value="${escapeHtml(m.name)}" maxlength="120" data-motif-id="${escapeHtml(m.id)}" aria-label="Type ${escapeHtml(m.name)}">
           <span class="usage">${used} soin${used > 1 ? 's' : ''}</span>
@@ -992,6 +1005,7 @@
 
     function readForm() {
       const values = {
+        type: $('fType').value.trim(),
         motif: $('fMotif').value.trim(),
         patient: radioValue('patient'),
         payer: radioValue('payer'),
@@ -1008,7 +1022,7 @@
       const invalid = [['fAmount', 'Montant'], ['fSecu', 'Sécurité sociale'], ['fMutuelle', 'Mutuelle']]
         .find(([id]) => $(id).value.trim() !== '' && parseAmount($(id).value) === null);
       let error = '';
-      if (!values.motif) error = 'Indiquez le motif du soin.';
+      if (!values.type && !values.motif) error = 'Indiquez le type d’acte ou le motif du soin.';
       else if (invalid) error = `Montant invalide : ${invalid[1]}.`;
       return { values, error };
     }
@@ -1026,6 +1040,7 @@
       if (id && !e) return;
       editingId = e ? e.id : null;
       $('expenseTitle').textContent = e ? 'Modifier le soin' : 'Nouveau soin';
+      $('fType').value = e ? e.type || '' : '';
       $('fMotif').value = e ? e.motif || '' : '';
       $('fDate').value = e ? e.date || '' : isoDate();
       $('fAmount').value = amountToInput(e && e.amount);
@@ -1047,17 +1062,17 @@
       $('expenseForm').scrollTop = 0;
     }
 
-    /* ---------- Motif : autocomplétion sur les types de soin ---------- */
+    /* ---------- Type d'acte : autocomplétion ---------- */
     const plain = value => String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     function motifOptions() {
       const options = sortedMotifs().map(m => ({ name: m.name, type: true }));
       const seen = new Set(options.map(o => norm(o.name)));
       data.expenses.slice().sort(byDateDesc).forEach(e => {
-        const key = norm(e.motif);
+        const key = norm(e.type);
         if (key && !seen.has(key)) {
           seen.add(key);
-          options.push({ name: e.motif.trim(), type: false });
+          options.push({ name: e.type.trim(), type: false });
         }
       });
       return options;
@@ -1070,12 +1085,12 @@
     }
 
     function hideMotifSuggest() {
-      $('motifSuggest').hidden = true;
-      $('fMotif').setAttribute('aria-expanded', 'false');
+      $('typeSuggest').hidden = true;
+      $('fType').setAttribute('aria-expanded', 'false');
     }
 
     function renderMotifSuggest() {
-      const typed = $('fMotif').value.trim();
+      const typed = $('fType').value.trim();
       const query = plain(typed);
       const matches = motifOptions()
         .filter(o => plain(o.name).includes(query) && norm(o.name) !== norm(typed))
@@ -1085,26 +1100,26 @@
       const html = matches.map(o => `<button type="button" class="suggest-item" role="option" data-motif-pick="${escapeHtml(o.name)}">
           <span>${highlight(o.name, query)}</span>${o.type ? '' : '<small>déjà saisi</small>'}</button>`).join('')
         + (canAdd ? `<button type="button" class="suggest-item suggest-add" data-motif-add>${icon('i-plus')}<span>Ajouter « ${escapeHtml(typed)} » aux types</span></button>` : '');
-      $('motifSuggest').innerHTML = html;
-      $('motifSuggest').hidden = !html;
-      $('fMotif').setAttribute('aria-expanded', String(Boolean(html)));
+      $('typeSuggest').innerHTML = html;
+      $('typeSuggest').hidden = !html;
+      $('fType').setAttribute('aria-expanded', String(Boolean(html)));
     }
 
-    $('fMotif').addEventListener('focus', renderMotifSuggest);
-    $('fMotif').addEventListener('input', renderMotifSuggest);
-    $('fMotif').addEventListener('blur', hideMotifSuggest);
-    $('fMotif').addEventListener('keydown', event => {
-      if (event.key === 'Escape' && !$('motifSuggest').hidden) {
+    $('fType').addEventListener('focus', renderMotifSuggest);
+    $('fType').addEventListener('input', renderMotifSuggest);
+    $('fType').addEventListener('blur', hideMotifSuggest);
+    $('fType').addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !$('typeSuggest').hidden) {
         event.preventDefault();
         event.stopPropagation();
         hideMotifSuggest();
       }
     });
     // Garde le focus dans le champ pendant le choix d'une suggestion.
-    $('motifSuggest').addEventListener('pointerdown', event => event.preventDefault());
+    $('typeSuggest').addEventListener('pointerdown', event => event.preventDefault());
 
     function pickMotif(name) {
-      $('fMotif').value = name;
+      $('fType').value = name;
       hideMotifSuggest();
       updateFormStatus();
     }
@@ -1135,7 +1150,7 @@
       if (!e || e.reversement !== 'todo') return;
       const payer = personName(e.payer);
       const amount = e.mutuelle === null || e.mutuelle === undefined ? '' : ` (${euro(e.mutuelle)})`;
-      const message = `${e.motif || 'Soin'} du ${formatDate(e.date)} : le remboursement mutuelle${amount} a-t-il bien été reversé${payer ? ` à ${payer}` : ''} ?`;
+      const message = `${e.type || e.motif || 'Soin'} du ${formatDate(e.date)} : le remboursement mutuelle${amount} a-t-il bien été reversé${payer ? ` à ${payer}` : ''} ?`;
       if (!await askConfirm(message, 'Marquer reversé')) return;
       e.reversement = 'done';
       e.updatedAt = Date.now();
@@ -1230,7 +1245,7 @@
       else if (ds.reverse) markReversed(ds.reverse);
       else if (ds.motifPick !== undefined) pickMotif(ds.motifPick);
       else if (ds.motifAdd !== undefined) {
-        if (addMotifType($('fMotif').value)) showToast('Type ajouté');
+        if (addMotifType($('fType').value)) showToast('Type ajouté');
         hideMotifSuggest();
       }
       else if (ds.removeMotif) removeMotifType(ds.removeMotif);
@@ -1348,6 +1363,23 @@
       } catch (error) {
         showToast('Fichier de sauvegarde invalide');
       }
+    });
+
+    $('wipeBtn').addEventListener('click', async () => {
+      const count = data.expenses.length;
+      if (!count && !data.people.length) {
+        showToast('Aucune donnée à supprimer');
+        return;
+      }
+      if (!await askConfirm(`Supprimer définitivement ${count} soin(s) et ${data.people.length} personne(s) ? Cette action est irréversible.`, 'Tout supprimer')) return;
+      const now = Date.now();
+      // Les marqueurs de suppression propagent l'effacement aux autres appareils via Drive.
+      [...data.expenses, ...data.people].forEach(record => { data.deleted[record.id] = now; });
+      data.expenses = [];
+      data.people = [];
+      state.person = '';
+      save();
+      showToast('Toutes les données ont été supprimées');
     });
 
     /* ---------- Import Excel / copier-coller ---------- */
