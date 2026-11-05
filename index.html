@@ -233,6 +233,7 @@
             <button type="button" class="btn btn-light" id="exportBtn" style="flex:1">Sauvegarder (JSON)</button>
             <label class="btn btn-light file-btn" style="flex:1">Restaurer<input type="file" id="restoreFile" accept=".json,application/json"></label>
           </div>
+          <button type="button" class="btn btn-light" id="wipeBtn" style="color:var(--danger)">Tout supprimer</button>
         </section>
       </div>
     </div>
@@ -712,6 +713,20 @@
     });
 
     /* ---------- Import Excel ---------- */
+    $('wipeBtn').addEventListener('click', () => {
+      const count = data.expenses.length;
+      if (!count && !data.people.length) { showToast('Aucune donnée à supprimer'); return; }
+      if (!confirm(`Supprimer définitivement ${count} soin(s) et ${data.people.length} personne(s) ? Action irréversible.`)) return;
+      const now = Date.now();
+      // Les marqueurs de suppression propagent l'effacement aux autres appareils via Drive.
+      [...data.expenses, ...data.people].forEach(record => { data.deleted[record.id] = now; });
+      data.expenses = [];
+      data.people = [];
+      save();
+      renderPeople();
+      showToast('Toutes les données ont été supprimées');
+    });
+
     async function readZipEntries(buffer, wanted) {
       const view = new DataView(buffer);
       const bytes = new Uint8Array(buffer);
