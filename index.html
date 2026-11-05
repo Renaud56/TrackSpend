@@ -65,6 +65,10 @@
     .wait { color: var(--muted); }
     .ok { color: var(--ok); font-weight: 700; }
     .no { color: var(--danger); font-weight: 700; }
+    .revmark { display: inline-block; margin-top: 4px; border: 0; background: #2563eb; color: #fff; border-radius: 6px; padding: 1px 8px; font-size: calc(var(--fs) - 1.5px); font-weight: 600; }
+    #confirmText { margin: 6px 0 0; font-size: 15px; }
+    .bulk { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 6px var(--pad) 0; padding: 3px 4px 3px 10px; background: #dbeafe; color: #1e40af; border-radius: 8px; font-size: 12px; font-weight: 600; }
+    .bulk button { border: 0; background: #2563eb; color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
     .motif small .rest { color: var(--text); font-weight: 600; }
     .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
 
@@ -205,6 +209,16 @@
         <button type="submit" class="btn btn-primary">Enregistrer</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="sheet" id="confirmSheet" aria-labelledby="confirmText">
+    <div class="body">
+      <div class="sheet-body"><p id="confirmText"></p></div>
+      <div class="sheet-foot">
+        <button type="button" class="btn btn-light" data-close>Annuler</button>
+        <button type="button" class="btn btn-primary" id="confirmOk">Confirmer</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog class="sheet" id="settingsSheet" aria-labelledby="settingsTitle">
@@ -427,8 +441,9 @@
       if (left) infos.unshift(left);
       const rev = e.reversement === 'done' ? '<span class="ok" title="Reversé">✓</span>'
         : e.reversement === 'todo' ? '<span class="no" title="Pas encore reversé">✗</span>' : '<span></span>';
+      const mark = e.reversement === 'todo' ? `<button type="button" class="revmark" data-rev="${escapeHtml(e.id)}">Marquer reversé</button>` : '';
       return `<div class="grid row${s.done ? '' : ' todo'}" data-id="${escapeHtml(e.id)}" role="button" tabindex="0">
-        <div class="motif"><b>${escapeHtml(motifText(e) || 'Sans motif')}</b>${infos.length ? `<small>${infos.join(' · ')}</small>` : ''}</div>
+        <div class="motif"><b>${escapeHtml(motifText(e) || 'Sans motif')}</b>${infos.length ? `<small>${infos.join(' · ')}</small>` : ''}${mark}</div>
         <span class="ini" title="${escapeHtml(personName(e.patient))}">${escapeHtml(short[e.patient] || '')}</span>
         <span class="num">${num(e.amount)}</span>
         <span class="date">${shortDate(e.date)}</span>
@@ -458,7 +473,9 @@
         if (!groups.has(year)) groups.set(year, []);
         groups.get(year).push(e);
       });
-      $('list').innerHTML = [...groups].map(([year, items]) => {
+      const toRev = list.filter(e => e.reversement === 'todo').length;
+      const bulk = toRev ? `<div class="bulk"><span>${toRev} à reverser</span><button type="button" data-bulk-rev>Tout marquer reversé</button></div>` : '';
+      $('list').innerHTML = bulk + [...groups].map(([year, items]) => {
         const spent = items.reduce((sum, e) => sum + (e.amount || 0), 0);
         const left = items.reduce((sum, e) => sum + rest(e), 0);
         return `<div class="year"><span>${escapeHtml(year)}</span><small>${euro(spent)} · reste ${euro(left)}</small></div>`
@@ -670,7 +687,9 @@
       const target = event.target.closest('button, .row[data-id]');
       if (!target) return;
       const ds = target.dataset;
-      if (ds.id) openEdit(ds.id);
+      if (ds.rev) markReversed(ds.rev);
+      else if (ds.bulkRev !== undefined) bulkReversement();
+      else if (ds.id) openEdit(ds.id);
       else if (ds.filter) { filter = ds.filter; render(); window.scrollTo({ top: 0 }); }
       else if (ds.close !== undefined) target.closest('dialog').close();
       else if (ds.removePerson) removePerson(ds.removePerson);
@@ -684,7 +703,44 @@
       }
     });
 
+    let confirmAction = null;
+    function askConfirm(message, action) {
+      $('confirmText').textContent = message;
+      confirmAction = action;
+      openSheet($('confirmSheet'));
+    }
+
+    $('confirmOk').addEventListener('click', () => {
+      const action = confirmAction;
+      confirmAction = null;
+      $('confirmSheet').close();
+      if (action) action();
+    });
+
+    function markReversed(id) {
+      const e = data.expenses.find(x => x.id === id);
+      if (!e) return;
+      askConfirm(`Marquer « ${motifText(e) || 'Sans motif'} » (${euro(e.amount || 0)}) comme reversé ?`, () => {
+        e.reversement = 'done';
+        e.updatedAt = Date.now();
+        save();
+        showToast('Marqué reversé ✓');
+      });
+    }
+
+    function bulkReversement() {
+      const items = data.expenses.filter(e => e.reversement === 'todo' && matchesSearch(e));
+      if (!items.length) return;
+      askConfirm(`Marquer ${items.length} soin(s) comme reversé(s) ?`, () => {
+        const now = Date.now();
+        items.forEach(e => { e.reversement = 'done'; e.updatedAt = now; });
+        save();
+        showToast(`${items.length} soin(s) marqué(s) reversé(s)`);
+      });
+    }
+
     document.addEventListener('keydown', event => {
+      if (event.target.closest && event.target.closest('button')) return;
       const row = event.target.closest && event.target.closest('.row[data-id]');
       if (row && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();
