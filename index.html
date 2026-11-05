@@ -3,558 +3,240 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f4f6f8">
+  <meta name="theme-color" content="#0f766e">
   <title>Suivi santé</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230d9488'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='white'/%3E%3C/svg%3E">
   <style>
     :root {
-      --bg: #f4f6f8; --card: #fff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --soft: #f1f5f9;
-      --accent: #0d9488; --accent-2: #14b8a6; --accent-soft: #ccfbf1; --accent-ink: #115e59;
-      --warn: #d97706; --warn-soft: #fef3c7; --warn-ink: #92400e;
-      --ok: #16a34a; --ok-soft: #dcfce7; --ok-ink: #166534;
-      --danger: #dc2626; --danger-soft: #fee2e2; --danger-ink: #991b1b;
-      --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 6px 18px rgba(15, 23, 42, .06);
-      --nav-h: 68px; --safe-b: env(safe-area-inset-bottom, 0px);
-      --ease: cubic-bezier(.2, .8, .2, 1);
+      --bg: #f4f6f8; --card: #fff; --text: #1f2933; --muted: #6b7785; --line: #e3e7eb;
+      --accent: #0f766e; --accent-soft: #e0f2f1; --warn: #d97706; --warn-soft: #fef3c7; --ok: #15803d; --danger: #b91c1c;
+      --cols: minmax(0, 1fr) 18px 48px 36px 18px 44px 44px 16px;
+      --gap: 3px;
+      --pad: 8px;
+      --fs: 12.5px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
-    body {
-      min-height: 100dvh; padding-bottom: calc(var(--nav-h) + var(--safe-b) + 96px);
-      background: var(--bg); color: var(--text);
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.35;
+    @media (max-width: 339px) {
+      :root { --cols: minmax(0, 1fr) 16px 40px 30px 16px 38px 38px 12px; --gap: 2px; --pad: 6px; --fs: 11px; }
     }
-    body:has(dialog[open]) { overflow: hidden; }
-    button, input, select, textarea { font: inherit; color: inherit; }
-    button { border: 0; background: none; cursor: pointer; }
-    svg { flex: 0 0 auto; }
-    .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    @media (min-width: 480px) {
+      :root { --cols: minmax(0, 1fr) 30px 70px 48px 30px 64px 64px 30px; --gap: 8px; }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    button, input, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
     [hidden] { display: none !important; }
 
-    /* En-tête */
-    .topbar {
-      position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
-      background: rgba(244, 246, 248, .86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
-    .brand-logo { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 6px 14px rgba(13, 148, 136, .3); }
-    .brand-logo .icon { stroke-width: 2.6; }
-    .drive-chip {
-      display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px 0 10px; border-radius: 999px;
-      flex: 0 0 auto; border: 1px solid var(--border); background: #fff; font-size: .82rem; font-weight: 700; white-space: nowrap; box-shadow: var(--shadow);
-      transition: transform .15s var(--ease);
-    }
-    .drive-chip:active { transform: scale(.96); }
-    .drive-logo { width: 22px; height: 20px; }
-    .drive-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-    .drive-chip.on { border-color: #bbf7d0; background: #f0fdf4; color: var(--ok-ink); }
-    .drive-chip.on .drive-dot { background: var(--ok); }
-    .drive-chip.off, .drive-chip.unconfigured { border-color: #fecaca; background: #fff5f5; color: var(--danger-ink); }
-    .drive-chip.off .drive-dot, .drive-chip.unconfigured .drive-dot { background: var(--danger); }
-    .drive-chip.busy { color: var(--warn-ink); }
-    .drive-chip.busy .drive-dot { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
-    .test-banner { margin: 0 16px 8px; padding: 10px 14px; border-radius: 14px; background: var(--warn-soft); color: var(--warn-ink); font-size: .82rem; font-weight: 600; }
+    .top { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top); }
+    .bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; }
+    .bar h1 { font-size: 17px; margin: 0; flex: 1; }
+    .seg { display: inline-flex; background: var(--bg); border-radius: 10px; padding: 2px; }
+    .seg button, .seg label { border: 0; background: none; padding: 6px 10px; border-radius: 8px; font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+    .seg button[aria-pressed="true"], .seg input:checked + span { background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.12); font-weight: 600; }
+    .seg .count { background: var(--warn); color: #fff; border-radius: 9px; padding: 0 6px; font-size: 11px; font-weight: 700; }
+    .icon-btn { border: 0; background: none; width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center; position: relative; color: var(--muted); }
+    .icon-btn svg { width: 20px; height: 20px; }
+    .drive-chip { border: 1px solid var(--line); background: var(--bg); border-radius: 16px; padding: 5px 10px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+    .drive-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: #9aa5b1; }
+    .drive-chip.on { background: #dcfce7; border-color: #bbf7d0; color: var(--ok); } .drive-chip.on .dot { background: var(--ok); }
+    .drive-chip.busy { background: var(--warn-soft); border-color: #fde68a; color: #92400e; } .drive-chip.busy .dot { background: var(--warn); }
+    .drive-chip.off { color: var(--danger); } .drive-chip.off .dot { background: var(--danger); }
 
-    main { max-width: 760px; margin: 0 auto; padding: 4px 16px; }
-    .view { display: none; }
-    .view.active { display: block; animation: fade-up .22s var(--ease); }
-    .view-title { margin: 6px 4px 12px; font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
+    .search { display: flex; gap: 6px; align-items: center; padding: 0 var(--pad) 6px; }
+    .search input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: var(--bg); font-size: 16px; }
+    .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: #fff; }
+    .grid { display: grid; grid-template-columns: var(--cols); column-gap: var(--gap); align-items: start; padding: 0 var(--pad); }
+    .thead { font-size: 10px; color: var(--muted); font-weight: 600; white-space: nowrap; padding-top: 4px; padding-bottom: 5px; }
+    .thead span:not(:first-child), .row > span { text-align: center; }
+    .thead .r, .row .num { text-align: right; }
 
-    /* Filtres */
-    .search { position: relative; margin-bottom: 10px; }
-    .search .icon { position: absolute; top: 50%; left: 14px; width: 18px; height: 18px; color: var(--muted); transform: translateY(-50%); pointer-events: none; }
-    .search input { width: 100%; height: 48px; padding: 0 14px 0 42px; border: 1px solid var(--border); border-radius: 16px; background: #fff; font-size: 16px; }
-    .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
-    .chips::-webkit-scrollbar { display: none; }
-    .chip {
-      display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid var(--border);
-      border-radius: 999px; background: #fff; color: var(--muted); font-size: .85rem; font-weight: 600; white-space: nowrap;
-    }
-    .chip[aria-pressed="true"] { border-color: var(--text); background: var(--text); color: #fff; }
-    .chip-count { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--soft); color: var(--muted); font-size: .72rem; text-align: center; }
-    .chip[aria-pressed="true"] .chip-count { background: rgba(255, 255, 255, .2); color: #fff; }
+    main { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+    .year { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 10px 4px; font-weight: 700; color: var(--muted); font-size: 13px; }
+    .year small { font-weight: 500; }
+    .row { background: var(--card); border-bottom: 1px solid var(--line); padding-top: 9px; padding-bottom: 9px; font-size: var(--fs); font-variant-numeric: tabular-nums; cursor: pointer; }
+    .row:active { background: var(--accent-soft); }
+    .row.todo { box-shadow: inset 3px 0 0 var(--warn); }
+    .motif { min-width: 0; }
+    .motif b { display: block; font-weight: 600; font-size: calc(var(--fs) + 1px); overflow-wrap: anywhere; }
+    .motif small { display: block; color: var(--muted); font-size: calc(var(--fs) - 1px); margin-top: 1px; overflow-wrap: anywhere; }
+    .ini { font-weight: 600; color: var(--accent); }
+    .date { color: var(--muted); }
+    .miss { color: var(--warn); font-weight: 700; }
+    .wait { color: var(--muted); }
+    .ok { color: var(--ok); font-weight: 700; }
+    .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
 
-    /* Statistiques */
-    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 4px 0 14px; }
-    #todoStats { grid-template-columns: minmax(0, .75fr) minmax(0, 1.15fr) minmax(0, 1.1fr); }
-    .stat { min-width: 0; padding: 12px; border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
-    .stat-label { color: var(--muted); font-size: .72rem; font-weight: 600; }
-    .stat-value { margin-top: 4px; overflow: hidden; font-size: clamp(.9rem, 4.2vw, 1.12rem); font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
-    .stat.warn .stat-value { color: var(--warn); }
-    .stat.accent .stat-value { color: var(--accent); }
-    .stat.ok .stat-value { color: var(--ok); }
+    .fab { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.25); display: grid; place-items: center; }
+    .fab svg { width: 28px; height: 28px; }
 
-    /* Liste des soins */
-    .list { display: grid; gap: 10px; }
-    .item {
-      display: grid; gap: 8px; width: 100%; padding: 14px; border-radius: 20px; background: var(--card); box-shadow: var(--shadow);
-      text-align: left; transition: transform .15s var(--ease), box-shadow .15s;
-    }
-    .item { cursor: pointer; }
-    .item:active:not(:has(.item-action:active)) { transform: scale(.985); }
-    .item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .item > span { display: flex; }
-    .item-top { align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .item-title { min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
-    .item-sub { display: block; margin-top: 2px; color: var(--muted); font-size: .84rem; font-weight: 500; }
-    .item-amount { font-weight: 800; white-space: nowrap; }
-    .item-meta { flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: .8rem; }
-    .person { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: .74rem; font-weight: 700; }
-    .steps { flex-wrap: wrap; gap: 6px; }
-    .step { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: .74rem; font-weight: 700; }
-    .step .icon { width: 13px; height: 13px; stroke-width: 2.6; }
-    .step.ok { background: var(--ok-soft); color: var(--ok-ink); }
-    .step.wait { background: var(--warn-soft); color: var(--warn-ink); }
-    .step.closed { background: var(--soft); color: var(--muted); }
-    .item-rest { color: var(--muted); font-size: .8rem; }
-    .item-rest b { margin-left: 4px; color: var(--text); }
-    .item-notes { align-items: flex-start; gap: 6px; padding: 8px 10px; border-radius: 12px; background: var(--soft); color: #475569; font-size: .8rem; }
-    .item-notes .icon { width: 14px; height: 14px; margin-top: 2px; color: var(--muted); }
-    .item-notes span { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical; white-space: pre-line; overflow-wrap: anywhere; }
-    .item-foot { flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; min-height: 22px; }
-    .item-action {
-      display: inline-flex; align-items: center; gap: 6px; height: 38px; margin-left: auto; padding: 0 14px; border-radius: 12px;
-      background: var(--accent); color: #fff; font-size: .8rem; font-weight: 700; transition: transform .15s var(--ease);
-    }
-    .item-action:active { transform: scale(.95); }
-    .item-action .icon { width: 16px; height: 16px; stroke-width: 2.6; }
-    .group-title { display: flex; align-items: baseline; justify-content: space-between; margin: 18px 6px 8px; color: var(--muted); font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-    .group-title:first-child { margin-top: 4px; }
-    .empty { display: grid; justify-items: center; gap: 10px; padding: 44px 20px; color: var(--muted); text-align: center; }
-    .empty .icon { width: 40px; height: 40px; color: var(--accent); }
-    .bulk-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding: 10px 10px 10px 14px; border-radius: 16px; background: var(--warn-soft); color: var(--warn-ink); font-size: .85rem; font-weight: 600; }
+    dialog.sheet { border: 0; padding: 0; margin: auto auto 0; width: 100%; max-width: min(560px, 100vw); max-height: 94vh; overflow: hidden; border-radius: 16px 16px 0 0; background: var(--card); color: var(--text); }
+    dialog.sheet::backdrop { background: rgba(15, 23, 42, .45); }
+    @media (min-width: 600px) { dialog.sheet { margin: auto; border-radius: 16px; } }
+    .sheet > form, .sheet > .body { display: flex; flex-direction: column; max-height: 94vh; }
+    .sheet-head { display: flex; align-items: center; gap: 6px; padding: 10px 10px 6px 16px; }
+    .sheet-head h2 { flex: 1; font-size: 16px; margin: 0; }
+    .sheet-body { overflow-y: auto; overflow-x: hidden; padding: 4px 16px 12px; display: grid; gap: 12px; }
+    .sheet-foot { display: flex; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 
-    /* Boutons */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px;
-      border-radius: 14px; font-weight: 700; transition: transform .15s var(--ease), background-color .15s;
-    }
-    .btn:active { transform: scale(.97); }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #0f766e; }
-    .btn-ghost { background: var(--soft); color: var(--text); }
-    .btn-ghost:hover { background: #e2e8f0; }
-    .btn-danger { background: var(--danger-soft); color: #b91c1c; }
-    .btn-small { min-height: 40px; padding: 0 14px; border-radius: 12px; font-size: .85rem; }
-    .btn-block { width: 100%; }
-    .icon-btn { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--soft); color: var(--muted); }
-    .icon-btn:hover { color: var(--text); }
-    .fab {
-      position: fixed; right: 18px; bottom: calc(var(--nav-h) + var(--safe-b) + 16px); z-index: 30;
-      display: flex; align-items: center; gap: 8px; height: 58px; padding: 0 22px 0 18px; border-radius: 20px;
-      background: var(--accent); color: #fff; font-weight: 700; box-shadow: 0 10px 26px rgba(13, 148, 136, .42);
-      transition: transform .15s var(--ease);
-    }
-    .fab:active { transform: scale(.95); }
-    .fab .icon { width: 22px; height: 22px; stroke-width: 2.6; }
+    .field { display: grid; gap: 4px; }
+    .field > span, .lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+    .field { min-width: 0; }
+    input[type="text"], input[type="date"], textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #fff; font-size: 16px; min-height: 44px; }
+    input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+    textarea { resize: vertical; min-height: 44px; }
+    .with-btn { display: flex; gap: 6px; }
+    .with-btn input { flex: 1; min-width: 0; }
+    .mini { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 0 12px; min-height: 44px; font-size: 14px; white-space: nowrap; }
+    .missing input[type="text"], .missing input[type="date"] { border-color: var(--warn); background: var(--warn-soft); }
+    .missing > span { color: var(--warn); }
+    .sep { border-top: 1px dashed var(--line); margin: 2px 0; }
 
-    /* Navigation : barre en bas sur mobile, colonne à gauche sur grand écran */
-    .nav {
-      position: fixed; right: 0; bottom: 0; left: 0; z-index: 25; display: grid; grid-template-columns: repeat(3, 1fr);
-      height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b);
-      border-top: 1px solid var(--border); background: rgba(255, 255, 255, .94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    }
-    .nav-btn { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font-size: .72rem; font-weight: 700; }
-    .nav-icon { display: grid; place-items: center; width: 60px; height: 32px; border-radius: 999px; transition: background-color .2s; }
-    .nav-btn.active { color: var(--text); }
-    .nav-btn.active .nav-icon { background: var(--accent-soft); color: var(--accent-ink); }
-    .nav-badge { position: absolute; top: 7px; left: calc(50% + 10px); display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border: 2px solid #fff; border-radius: 999px; background: var(--warn); color: #fff; font-size: .66rem; }
-    @media (min-width: 900px) {
-      body { padding: 0 0 40px 250px; }
-      .topbar { padding-left: 24px; }
-      .nav {
-        top: 0; right: auto; width: 250px; height: auto; grid-template-columns: 1fr; grid-auto-rows: min-content; align-content: start; gap: 6px;
-        padding: 90px 14px 14px; border-top: 0; border-right: 1px solid var(--border);
-      }
-      .nav-btn { flex-direction: row; justify-content: flex-start; gap: 10px; height: 50px; padding: 0 12px; border-radius: 14px; font-size: .92rem; }
-      .nav-btn:hover:not(.active) { background: var(--soft); }
-      .nav-btn.active { background: var(--accent-soft); color: var(--accent-ink); }
-      .nav-icon { width: auto; height: auto; background: none !important; }
-      .nav-badge { position: static; margin-left: auto; border: 0; }
-      .fab { right: 32px; bottom: 32px; }
-    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips label, .chips button { border: 1px solid var(--line); border-radius: 18px; padding: 7px 12px; background: #fff; font-size: 14px; display: inline-flex; }
+    .chips input, .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .chips label:has(input:checked) { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    .chips button { color: var(--muted); border-style: dashed; }
+    .seg.full { display: flex; }
+    .seg.full label { flex: 1; justify-content: center; padding: 0; position: relative; }
+    .seg.full label span { display: block; width: 100%; text-align: center; padding: 9px 4px; border-radius: 8px; }
 
-    /* Cartes réglages */
-    .card { margin-bottom: 12px; padding: 18px; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); }
-    .card h2 { font-size: 1.05rem; }
-    .card-desc { margin: 4px 0 14px; color: var(--muted); font-size: .84rem; }
-    .card .btn + .btn { margin-top: 8px; }
-    .people { display: grid; gap: 8px; margin-bottom: 12px; list-style: none; }
-    .people li { display: flex; align-items: center; gap: 8px; }
-    .people .usage { flex: 0 0 auto; color: var(--muted); font-size: .75rem; }
-    .inline-form { display: flex; gap: 8px; }
-    .inline-form input { flex: 1; min-width: 0; }
-    .text-input, .field input, .field textarea, .people input, .inline-form input, #importText {
-      width: 100%; min-width: 0; min-height: 48px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 14px; background: #fff; font-size: 16px;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px rgba(13, 148, 136, .15); }
-    #importText { margin: 10px 0 8px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
-    .file-btn { position: relative; width: 100%; }
-    .import-preview { display: grid; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 16px; background: var(--soft); font-size: .88rem; }
-    .settings-actions { display: grid; gap: 8px; }
+    .btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 600; font-size: 15px; }
+    .btn-primary { background: var(--accent); color: #fff; flex: 1; }
+    .btn-light { background: var(--bg); }
+    .btn-danger { background: none; color: var(--danger); }
+    .error { color: var(--danger); font-size: 13px; min-height: 0; }
 
-    /* Feuilles modales */
-    dialog.sheet {
-      width: 100%; max-width: 560px; max-height: 94dvh; margin: auto auto 0; padding: 0; overflow: hidden;
-      border: 0; border-radius: 26px 26px 0 0; background: #fff; color: inherit; box-shadow: 0 -10px 40px rgba(15, 23, 42, .2);
-    }
-    dialog.sheet[open] { animation: sheet-in .28s var(--ease); }
-    dialog.sheet::backdrop { background: rgba(15, 23, 42, .45); backdrop-filter: blur(2px); }
-    @media (min-width: 640px) { dialog.sheet { margin: auto; border-radius: 26px; } dialog.sheet[open] { animation: modal-in .22s var(--ease); } }
-    .sheet-body { max-height: 94dvh; padding: 0 18px calc(4px + var(--safe-b)); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
-    .sheet-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 12px; background: #fff; }
-    .sheet-head::before { content: ""; position: absolute; top: 6px; left: 50%; width: 40px; height: 5px; border-radius: 99px; background: #cbd5e1; transform: translateX(-50%); }
-    .sheet-head h2 { padding-top: 6px; font-size: 1.2rem; letter-spacing: -.01em; }
-    .sheet-head .icon-btn { margin-top: 6px; }
-    .sheet-actions { position: sticky; bottom: 0; z-index: 2; display: flex; gap: 10px; margin: 16px -18px 0; padding: 12px 18px calc(12px + var(--safe-b)); border-top: 1px solid var(--border); background: #fff; }
-    .sheet-actions .btn-primary { flex: 1; }
-    .sheet-actions .btn { padding: 0 14px; }
-    .field { display: grid; gap: 6px; margin-bottom: 14px; min-width: 0; }
-    .field > label, .field-label { font-size: .84rem; font-weight: 700; }
-    .hint { margin-top: -2px; color: var(--muted); font-size: .76rem; }
-    .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .field input[type="date"] { appearance: none; -webkit-appearance: none; }
-    .field textarea { min-height: 72px; resize: vertical; }
-    .input-suffix { position: relative; flex: 1; min-width: 0; }
-    .input-suffix input { padding-right: 34px; }
-    .input-suffix span { position: absolute; top: 50%; right: 14px; color: var(--muted); font-weight: 600; transform: translateY(-50%); pointer-events: none; }
-    .amount-row { display: flex; gap: 8px; }
-    .section { margin: 6px -18px 14px; padding: 16px 18px 2px; border-top: 8px solid var(--soft); }
-    .section h3 { margin-bottom: 12px; font-size: .95rem; }
-    .pick { display: flex; flex-wrap: wrap; gap: 8px; }
-    .pick-chip { position: relative; }
-    .pick-chip input { position: absolute; opacity: 0; pointer-events: none; }
-    .pick-chip span, .pick-add {
-      display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid var(--border);
-      border-radius: 999px; background: #fff; font-size: .88rem; font-weight: 600; cursor: pointer;
-    }
-    .pick-chip input:checked + span { border-color: var(--accent); background: var(--accent); color: #fff; }
-    .pick-chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .pick-add { border-style: dashed; color: var(--accent); }
-    .pick-add .icon { width: 16px; height: 16px; }
-    .motif-field { position: relative; }
-    .suggest {
-      position: absolute; top: 100%; right: 0; left: 0; z-index: 5; display: grid; max-height: 264px; margin-top: 4px; padding: 6px;
-      overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 16px; background: #fff; box-shadow: 0 12px 30px rgba(15, 23, 42, .16);
-    }
-    .suggest-item { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: .92rem; text-align: left; }
-    .suggest-item:hover, .suggest-item:focus-visible { background: var(--soft); outline: none; }
-    .suggest-item mark { background: none; color: var(--accent-ink); font-weight: 800; }
-    .suggest-item small { margin-left: auto; color: var(--muted); font-size: .72rem; }
-    .suggest-add { color: var(--accent); font-weight: 700; }
-    .suggest-add .icon { width: 16px; height: 16px; }
-    .add-person { display: flex; gap: 8px; margin: -4px 0 14px; }
-    .add-person input { flex: 1; min-width: 0; }
-    .seg { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 4px; padding: 4px; border-radius: 14px; background: var(--soft); }
-    .seg label { position: relative; }
-    .seg input { position: absolute; opacity: 0; pointer-events: none; }
-    .seg span { display: grid; place-items: center; height: 40px; padding: 0 4px; border-radius: 10px; color: var(--muted); font-size: .8rem; font-weight: 700; text-align: center; cursor: pointer; transition: background-color .15s, color .15s; }
-    .seg input:checked + span { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(15, 23, 42, .12); }
-    .seg input:focus-visible + span { outline: 2px solid var(--accent); }
-    .rest-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding: 14px; border-radius: 16px; background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
-    .rest-box strong { font-size: 1.15rem; }
-    .form-status { margin-bottom: 14px; }
-    .switch { display: flex; align-items: center; gap: 12px; min-height: 48px; font-size: .9rem; font-weight: 600; cursor: pointer; }
-    .switch input { position: relative; flex: 0 0 auto; width: 46px; height: 28px; border-radius: 999px; background: #cbd5e1; transition: background-color .2s; appearance: none; -webkit-appearance: none; cursor: pointer; }
-    .switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); transition: transform .2s var(--ease); }
-    .switch input:checked { background: var(--accent); }
-    .switch input:checked::after { transform: translateX(18px); }
-    .form-error { min-height: 1.2em; color: var(--danger); font-size: .85rem; font-weight: 600; }
+    .set-section { display: grid; gap: 8px; }
+    .set-section h3 { font-size: 13px; margin: 6px 0 0; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    .people { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .people li { display: flex; gap: 6px; align-items: center; }
+    .people li input { flex: 1; }
+    .hint { color: var(--muted); font-size: 13px; margin: 0; }
+    .file-btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; }
 
-    .drive-panel { display: grid; justify-items: center; gap: 10px; padding: 8px 0 4px; text-align: center; }
-    .drive-panel .drive-logo { width: 56px; height: 50px; }
-    .drive-status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: .85rem; font-weight: 700; }
-    .drive-status-pill.on { background: var(--ok-soft); color: var(--ok-ink); }
-    .drive-status-pill.busy { background: var(--warn-soft); color: var(--warn-ink); }
-    .drive-status-pill.off, .drive-status-pill.unconfigured, .drive-status-pill.test { background: var(--danger-soft); color: var(--danger-ink); }
-    .drive-message { color: var(--muted); font-size: .86rem; }
-    .drive-buttons { display: grid; width: 100%; gap: 8px; margin-top: 8px; }
-
-    dialog.confirm { max-width: 400px; margin: auto; border-radius: 24px; }
-    dialog.confirm form { padding: 22px; }
-    dialog.confirm p { margin-bottom: 18px; font-weight: 600; }
-    dialog.confirm .confirm-actions { display: flex; gap: 10px; }
-    dialog.confirm .btn { flex: 1; }
-
-    .toast {
-      position: fixed; bottom: calc(var(--nav-h) + var(--safe-b) + 88px); left: 50%; z-index: 100; max-width: calc(100vw - 32px);
-      padding: 12px 18px; border-radius: 14px; background: var(--text); color: #fff; font-size: .9rem; font-weight: 600;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, .3); opacity: 0; pointer-events: none; transform: translate(-50%, 12px); transition: opacity .2s, transform .2s var(--ease);
-    }
+    .toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: #1f2933; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; opacity: 0; pointer-events: none; transition: .2s; z-index: 20; max-width: 90vw; }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
-    @media (min-width: 900px) { .toast { bottom: 32px; } }
-
-    @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } }
-    @keyframes sheet-in { from { transform: translateY(100%); } }
-    @keyframes modal-in { from { opacity: 0; transform: translateY(14px) scale(.98); } }
-    @keyframes pulse { 50% { opacity: .35; } }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
-    @media (max-width: 380px) {
-      .stats { gap: 6px; } .stat { padding: 10px 8px; }
-      .brand { gap: 8px; font-size: 1.02rem; } .brand-logo { width: 34px; height: 34px; }
-      .drive-chip { gap: 6px; padding: 0 10px 0 8px; }
-    }
+    .test-banner { background: var(--warn-soft); color: #92400e; text-align: center; font-size: 12px; padding: 3px; }
   </style>
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
-    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
-    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
-    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13h4l2 3h4l2-3h4"/><path d="M5.5 5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"/></symbol>
-    <symbol id="i-done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></symbol>
-    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
-    <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 6h14M5 11h14M5 16h9"/></symbol>
-    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
-    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
-    <symbol id="i-cross" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-    <symbol id="i-drive" viewBox="0 0 87.3 78">
-      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
-      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/></symbol>
   </svg>
 
-  <header class="topbar">
-    <div class="brand"><span class="brand-logo"><svg class="icon"><use href="#i-cross"/></svg></span>Suivi santé</div>
-    <button type="button" class="drive-chip off" id="driveChip" aria-label="Google Drive : non connecté" data-open-drive>
-      <svg class="drive-logo" aria-hidden="true"><use href="#i-drive"/></svg>
-      <span class="drive-dot" aria-hidden="true"></span>
-      <span id="driveChipLabel">Non connecté</span>
-    </button>
-  </header>
-  <div class="test-banner" id="testBanner" hidden>Mode test : données fictives, aucune sauvegarde ni synchronisation.</div>
-
-  <main>
-    <div id="filters">
-      <div class="search">
-        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-        <input type="search" id="searchInput" placeholder="Rechercher un soin, une personne…" aria-label="Rechercher" autocomplete="off">
-      </div>
-      <div class="chips" id="personChips" aria-label="Filtrer par personne"></div>
+  <header class="top">
+    <div class="test-banner" id="testBanner" hidden>Mode test : données fictives, rien n’est enregistré</div>
+    <div class="bar">
+      <h1>Santé</h1>
+      <button type="button" class="drive-chip off" id="driveChip"><span class="dot"></span><span id="driveChipLabel">Non connecté</span></button>
+      <button type="button" class="icon-btn" id="settingsBtn" aria-label="Réglages"><svg><use href="#i-menu"/></svg></button>
     </div>
-
-    <section class="view active" id="view-todo" aria-labelledby="todoTitle">
-      <h1 class="view-title" id="todoTitle">À compléter</h1>
-      <div class="stats" id="todoStats"></div>
-      <div class="chips" id="stepChips" aria-label="Filtrer par étape manquante"></div>
-      <div class="bulk-bar" id="bulkBar" hidden>
-        <span id="bulkLabel"></span>
-        <button type="button" class="btn btn-small btn-primary" id="bulkReverseBtn">Tout marquer reversé</button>
+    <div class="search">
+      <input type="search" id="searchInput" placeholder="Rechercher…" autocomplete="off" aria-label="Rechercher (motif, personne, montant, date)">
+      <div class="seg" role="group" aria-label="Filtre">
+        <button type="button" data-filter="todo" aria-pressed="true">À compléter <span class="count" id="todoCount"></span></button>
+        <button type="button" data-filter="all" aria-pressed="false">Tout</button>
       </div>
-      <div class="list" id="todoList"></div>
-    </section>
+    </div>
+    <div class="grid thead" aria-hidden="true">
+      <span>Motif</span><span>Pour</span><span class="r">€</span><span>Date</span><span>Payé</span><span class="r">Sécu</span><span class="r">Mut.</span><span>Rev</span>
+    </div>
+  </header>
 
-    <section class="view" id="view-done" aria-labelledby="doneTitle">
-      <h1 class="view-title" id="doneTitle">Terminés</h1>
-      <div class="chips" id="yearChips" aria-label="Filtrer par année"></div>
-      <div class="stats" id="doneStats"></div>
-      <div class="list" id="doneList"></div>
-    </section>
+  <main id="list"></main>
 
-    <section class="view" id="view-settings" aria-labelledby="settingsTitle">
-      <h1 class="view-title" id="settingsTitle">Réglages</h1>
+  <button type="button" class="fab" id="fab" aria-label="Ajouter un soin"><svg><use href="#i-plus"/></svg></button>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-      <div class="card">
-        <h2>Personnes</h2>
-        <p class="card-desc">Personnes soignées et payeurs (vous pouvez aussi ajouter un compte joint).</p>
-        <ul class="people" id="peopleList"></ul>
-        <form class="inline-form" id="addPersonForm">
-          <input id="addPersonInput" maxlength="40" placeholder="Nouveau nom" aria-label="Nouveau nom" autocomplete="off">
-          <button type="submit" class="btn btn-primary btn-small">Ajouter</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Types d’acte</h2>
-        <p class="card-desc">Proposés dans le champ « Type d’acte » d’un soin (la saisie libre reste possible).</p>
-        <ul class="people" id="motifTypeList"></ul>
-        <form class="inline-form" id="addMotifForm">
-          <input id="addMotifInput" maxlength="120" placeholder="Nouveau type" aria-label="Nouveau type de soin" autocomplete="off">
-          <button type="submit" class="btn btn-primary btn-small">Ajouter</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Google Drive</h2>
-        <p class="card-desc">Statut : <strong id="settingsDriveStatus">Non connecté</strong>. Les données sont partagées via un fichier JSON sur Google Drive.</p>
-        <button type="button" class="btn btn-ghost btn-block" data-open-drive>Gérer la synchronisation</button>
-      </div>
-
-      <div class="card">
-        <h2>Importer depuis Excel</h2>
-        <p class="card-desc">Fichier .xlsx (première feuille) ou cellules copiées depuis Excel, ligne d’en-tête comprise de préférence. Colonnes reconnues : motif, soin pour, montant, date du soin, payé par, remboursement sécu, transmis par sécu, transmis par nous, remboursement mutuelle, émis le, reversé, infos. Les doublons sont ignorés.</p>
-        <label class="btn btn-ghost file-btn">Choisir un fichier Excel<input type="file" id="importFile" accept=".xlsx,.csv,.tsv,.txt" hidden></label>
-        <textarea id="importText" rows="4" placeholder="…ou collez ici les cellules copiées depuis Excel" aria-label="Données collées depuis Excel"></textarea>
-        <button type="button" class="btn btn-ghost btn-block" id="analyzeBtn">Analyser le texte collé</button>
-        <div class="import-preview" id="importPreview" hidden></div>
-      </div>
-
-      <div class="card">
-        <h2>Sauvegarde</h2>
-        <p class="card-desc">Copie locale au format JSON. La restauration fusionne avec les données actuelles.</p>
-        <div class="settings-actions">
-          <button type="button" class="btn btn-ghost" id="exportBtn">Exporter (JSON)</button>
-          <label class="btn btn-ghost file-btn">Restaurer une sauvegarde<input type="file" id="restoreFile" accept=".json,application/json" hidden></label>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Tout supprimer</h2>
-        <p class="card-desc">Efface tous les soins et toutes les personnes, ici et sur Google Drive (les types d’acte sont conservés). Pensez à exporter une sauvegarde avant.</p>
-        <button type="button" class="btn btn-danger btn-block" id="wipeBtn">Tout supprimer</button>
-      </div>
-    </section>
-  </main>
-
-  <button type="button" class="fab" id="fab"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Ajouter un soin</button>
-
-  <nav class="nav" aria-label="Navigation principale">
-    <button type="button" class="nav-btn active" data-view="todo">
-      <span class="nav-icon"><svg class="icon" aria-hidden="true"><use href="#i-inbox"/></svg></span>À compléter
-      <span class="nav-badge" id="todoBadge" hidden></span>
-    </button>
-    <button type="button" class="nav-btn" data-view="done">
-      <span class="nav-icon"><svg class="icon" aria-hidden="true"><use href="#i-done"/></svg></span>Terminés
-    </button>
-    <button type="button" class="nav-btn" data-view="settings">
-      <span class="nav-icon"><svg class="icon" aria-hidden="true"><use href="#i-gear"/></svg></span>Réglages
-    </button>
-  </nav>
-
-  <dialog class="sheet" id="expenseSheet" aria-labelledby="expenseTitle" data-history>
-    <form class="sheet-body" id="expenseForm" novalidate>
+  <dialog class="sheet" id="editSheet" aria-labelledby="editTitle">
+    <form id="form" novalidate>
       <div class="sheet-head">
-        <h2 id="expenseTitle">Nouveau soin</h2>
-        <button type="button" class="icon-btn" data-close aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
+        <h2 id="editTitle">Soin</h2>
+        <button type="button" class="icon-btn" data-close autofocus aria-label="Fermer"><svg><use href="#i-close"/></svg></button>
       </div>
-
-      <div class="field motif-field">
-        <label for="fType">Type d’acte</label>
-        <input id="fType" maxlength="120" autocomplete="off" placeholder="Ex. : généraliste, kiné…" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="typeSuggest">
-        <div class="suggest" id="typeSuggest" role="listbox" aria-label="Types d’acte" hidden></div>
-      </div>
-      <div class="field">
-        <label for="fMotif">Motif</label>
-        <input id="fMotif" maxlength="120" autocomplete="off" placeholder="Ex. : séances genou, vaccin…">
-      </div>
-      <div class="field">
-        <span class="field-label" id="patientLabel">Soin pour</span>
-        <div class="pick" id="patientPick" role="radiogroup" aria-labelledby="patientLabel"></div>
-      </div>
-      <div class="add-person" id="addPersonRow" hidden>
-        <input id="newPersonInput" class="text-input" maxlength="40" placeholder="Nom de la personne" aria-label="Nom de la personne" autocomplete="off">
-        <button type="button" class="btn btn-primary btn-small" id="newPersonBtn">Ajouter</button>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label for="fDate">Date du soin</label>
-          <input type="date" id="fDate">
+      <div class="sheet-body">
+        <label class="field"><span>Motif</span><input type="text" id="fMotif" list="motifList" autocomplete="off" maxlength="120"></label>
+        <datalist id="motifList"></datalist>
+        <div class="two">
+          <label class="field"><span>Montant €</span><input type="text" id="fAmount" inputmode="decimal" autocomplete="off"></label>
+          <label class="field"><span>Date</span><input type="date" id="fDate"></label>
         </div>
-        <div class="field">
-          <label for="fAmount">Montant</label>
-          <div class="input-suffix"><input id="fAmount" inputmode="decimal" autocomplete="off" placeholder="0,00"><span>€</span></div>
-        </div>
-      </div>
-      <div class="field">
-        <span class="field-label" id="payerLabel">Payé par</span>
-        <div class="pick" id="payerPick" role="radiogroup" aria-labelledby="payerLabel"></div>
-      </div>
-
-      <div class="section">
-        <h3>Remboursements</h3>
-        <div class="field">
-          <label for="fSecu">Sécurité sociale</label>
-          <div class="amount-row">
-            <div class="input-suffix"><input id="fSecu" inputmode="decimal" autocomplete="off" placeholder="En attente"><span>€</span></div>
-            <button type="button" class="btn btn-ghost btn-small" data-zero="fSecu">Aucun</button>
+        <div class="field"><span class="lbl">Pour</span><div class="chips" id="patientPick"></div></div>
+        <div class="field"><span class="lbl">Payé par</span><div class="chips" id="payerPick"></div></div>
+        <div class="sep"></div>
+        <div class="two">
+          <div class="field" id="secuField"><span>Sécu remboursé €</span>
+            <div class="with-btn"><input type="text" id="fSecu" inputmode="decimal" autocomplete="off" aria-label="Sécu remboursé"><button type="button" class="mini" data-zero="fSecu" title="Pas de remboursement">–</button></div>
+          </div>
+          <div class="field" id="mutField"><span>Mutuelle remb. €</span>
+            <div class="with-btn"><input type="text" id="fMutuelle" inputmode="decimal" autocomplete="off" aria-label="Mutuelle remboursé"><button type="button" class="mini" data-zero="fMutuelle" title="Pas de remboursement">–</button></div>
           </div>
         </div>
-        <div class="field">
-          <span class="field-label">Transmission à la mutuelle</span>
-          <div class="seg" role="radiogroup" aria-label="Transmission à la mutuelle">
-            <label><input type="radio" name="transmission" value=""><span>Pas encore</span></label>
-            <label><input type="radio" name="transmission" value="secu"><span>Par la sécu</span></label>
-            <label><input type="radio" name="transmission" value="us"><span>Par nous</span></label>
+        <div class="field"><span class="lbl">Transmis à la mutuelle par</span>
+          <div class="seg full">
+            <label><input type="radio" name="transmission" value=""><span>—</span></label>
+            <label><input type="radio" name="transmission" value="secu"><span>Sécu</span></label>
+            <label><input type="radio" name="transmission" value="us"><span>Nous</span></label>
           </div>
         </div>
-        <div class="field">
-          <label for="fMutuelle">Mutuelle</label>
-          <div class="amount-row">
-            <div class="input-suffix"><input id="fMutuelle" inputmode="decimal" autocomplete="off" placeholder="En attente"><span>€</span></div>
-            <button type="button" class="btn btn-ghost btn-small" data-zero="fMutuelle">Aucun</button>
-          </div>
+        <div class="field"><span>Émis le</span>
+          <div class="with-btn"><input type="date" id="fMutuelleDate" aria-label="Émis le"><button type="button" class="mini" id="todayBtn">Aujourd’hui</button></div>
         </div>
-        <div class="field">
-          <label for="fMutuelleDate">Remboursement mutuelle émis le</label>
-          <input type="date" id="fMutuelleDate">
-        </div>
-        <div class="field">
-          <span class="field-label">Reversement au payeur</span>
-          <span class="hint">Quand la mutuelle rembourse une autre personne que celle qui a payé.</span>
-          <div class="seg" role="radiogroup" aria-label="Reversement au payeur">
-            <label><input type="radio" name="reversement" value="na"><span>Non concerné</span></label>
+        <div class="field" id="revField"><span class="lbl">Reversé</span>
+          <div class="seg full">
+            <label><input type="radio" name="reversement" value="na"><span>Pas besoin</span></label>
             <label><input type="radio" name="reversement" value="todo"><span>À faire</span></label>
             <label><input type="radio" name="reversement" value="done"><span>Fait</span></label>
           </div>
         </div>
-        <div class="rest-box"><span>Reste à charge</span><strong id="fRest">—</strong></div>
-        <div class="steps form-status" id="fStatus" style="display:flex"></div>
+        <label class="field"><span>Infos</span><textarea id="fNotes" rows="2" maxlength="500"></textarea></label>
+        <div class="error" id="formError" role="alert"></div>
       </div>
-
-      <div class="field">
-        <label for="fNotes">Infos</label>
-        <textarea id="fNotes" rows="2" maxlength="1000" placeholder="Ex. : feuille de soins envoyée le…"></textarea>
-      </div>
-      <label class="switch"><input type="checkbox" id="fClosed"><span>Marquer comme terminé même s’il manque des informations</span></label>
-      <p class="form-error" id="formError" role="alert"></p>
-
-      <div class="sheet-actions">
-        <button type="button" class="btn btn-danger" id="deleteBtn" aria-label="Supprimer ce soin" hidden><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button>
-        <button type="button" class="btn btn-ghost" data-close>Annuler</button>
+      <div class="sheet-foot">
+        <button type="button" class="btn btn-danger" id="deleteBtn" aria-label="Supprimer"><svg width="20" height="20"><use href="#i-trash"/></svg></button>
         <button type="submit" class="btn btn-primary">Enregistrer</button>
       </div>
     </form>
   </dialog>
 
-  <dialog class="sheet" id="driveSheet" aria-labelledby="driveTitle" data-history>
-    <div class="sheet-body">
+  <dialog class="sheet" id="settingsSheet" aria-labelledby="settingsTitle">
+    <div class="body">
       <div class="sheet-head">
-        <h2>Google Drive</h2>
-        <button type="button" class="icon-btn" data-close aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
+        <h2 id="settingsTitle">Réglages</h2>
+        <button type="button" class="icon-btn" data-close autofocus aria-label="Fermer"><svg><use href="#i-close"/></svg></button>
       </div>
-      <div class="drive-panel">
-        <svg class="drive-logo" aria-hidden="true"><use href="#i-drive"/></svg>
-        <span class="drive-status-pill off" id="driveStatusPill"><span class="drive-dot" style="background:currentColor"></span><span id="driveTitle">Non connecté</span></span>
-        <p class="drive-message" id="driveMessage"></p>
-        <p class="drive-message">Fichier partagé : <strong id="driveFileName"></strong><br>Partagez ce fichier depuis Google Drive avec la personne qui suit les dépenses avec vous.</p>
-        <div class="drive-buttons">
-          <button type="button" class="btn btn-primary" id="driveConnectBtn">Se connecter à Google Drive</button>
-          <button type="button" class="btn btn-ghost" id="driveDisconnectBtn" hidden>Se déconnecter</button>
-        </div>
+      <div class="sheet-body">
+        <section class="set-section">
+          <h3>Personnes</h3>
+          <ul class="people" id="peopleList"></ul>
+          <form class="with-btn" id="addPersonForm">
+            <input type="text" id="addPersonInput" placeholder="Prénom" maxlength="40" autocomplete="off" aria-label="Nouvelle personne">
+            <button type="submit" class="mini">Ajouter</button>
+          </form>
+        </section>
+        <section class="set-section">
+          <h3>Google Drive</h3>
+          <p class="hint"><strong id="driveStatus"></strong> — <span id="driveMessage"></span></p>
+          <div class="with-btn">
+            <button type="button" class="btn btn-light" id="driveConnectBtn" style="flex:1">Se connecter</button>
+            <button type="button" class="btn btn-light" id="driveDisconnectBtn">Déconnecter</button>
+          </div>
+        </section>
+        <section class="set-section">
+          <h3>Données</h3>
+          <label class="btn btn-light file-btn">Importer un fichier Excel<input type="file" id="importFile" accept=".xlsx,.csv,.txt"></label>
+          <div class="with-btn">
+            <button type="button" class="btn btn-light" id="exportBtn" style="flex:1">Sauvegarder (JSON)</button>
+            <label class="btn btn-light file-btn" style="flex:1">Restaurer<input type="file" id="restoreFile" accept=".json,application/json"></label>
+          </div>
+        </section>
       </div>
-      <div style="height:18px"></div>
     </div>
   </dialog>
-
-  <dialog class="sheet confirm" id="confirmDialog" aria-labelledby="confirmMessage">
-    <form method="dialog">
-      <p id="confirmMessage"></p>
-      <div class="confirm-actions">
-        <button class="btn btn-ghost" value="cancel">Annuler</button>
-        <button class="btn btn-primary" value="ok" id="confirmOk">Confirmer</button>
-      </div>
-    </form>
-  </dialog>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     'use strict';
@@ -567,11 +249,9 @@
     const DRIVE_FILE_NAME = 'suivi-depenses-sante.json';
 
     const $ = id => document.getElementById(id);
-    const euroFormat = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
-    const euro = value => value === null || value === undefined ? '—' : euroFormat.format(value);
     const pad = value => String(value).padStart(2, '0');
     const round2 = value => Math.round(value * 100) / 100;
-    const icon = (id, cls = 'icon') => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
+    const has = value => value !== null && value !== undefined;
     const norm = value => String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 
     function escapeHtml(value) {
@@ -586,14 +266,18 @@
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     }
 
-    function formatDate(iso) {
-      if (!iso) return 'Sans date';
-      const [y, m, d] = iso.split('-');
-      return `${d}/${m}/${y}`;
+    const shortDate = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '';
+
+    function num(value) {
+      if (!has(value)) return '';
+      if (value === 0) return '–';
+      return value.toLocaleString('fr-FR', Number.isInteger(value) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    const euro = value => `${round2(value) === 0 ? '0' : num(round2(value))} €`;
+
     function parseAmount(value) {
-      if (value === null || value === undefined) return null;
+      if (!has(value)) return null;
       if (typeof value === 'number') return Number.isFinite(value) ? round2(value) : null;
       const text = String(value).replace(/[\s\u00a0\u202f€]/g, '').replace(',', '.');
       if (!/^-?(\d+\.?\d*|\.\d+)$/.test(text)) return null;
@@ -601,19 +285,8 @@
     }
 
     /* ---------- Données ---------- */
-    const DEFAULT_MOTIFS = [
-      'Médecin généraliste', 'Pédiatre', 'Spécialiste', 'Dentiste', 'Orthodontiste', 'Kinésithérapeute', 'Ostéopathe',
-      'Radiologie', 'Échographie', 'Analyses laboratoire', 'Pharmacie', 'Ophtalmologue', 'Opticien / lunettes',
-      'Orthophoniste', 'Psychologue', 'Dermatologue', 'Gynécologue', 'Hôpital / urgences'
-    ];
-
-    // IDs fixes et updatedAt 0 : les types par défaut fusionnent sans doublon entre appareils.
-    function defaultMotifs() {
-      return DEFAULT_MOTIFS.map((name, i) => ({ id: `m-default-${i + 1}`, name, updatedAt: 0 }));
-    }
-
     function emptyData() {
-      return { version: 1, ts: 0, people: [], motifs: defaultMotifs(), expenses: [], deleted: {} };
+      return { version: 1, ts: 0, people: [], motifs: [], expenses: [], deleted: {} };
     }
 
     function isData(value) {
@@ -625,7 +298,7 @@
         version: 1,
         ts: Number(value.ts) || 0,
         people: value.people.filter(p => p && typeof p.id === 'string' && typeof p.name === 'string'),
-        motifs: Array.isArray(value.motifs) ? value.motifs.filter(m => m && typeof m.id === 'string' && typeof m.name === 'string') : defaultMotifs(),
+        motifs: Array.isArray(value.motifs) ? value.motifs.filter(m => m && typeof m.id === 'string') : [],
         expenses: value.expenses.filter(e => e && typeof e.id === 'string'),
         deleted: value.deleted && typeof value.deleted === 'object' ? { ...value.deleted } : {}
       };
@@ -663,54 +336,26 @@
     }
 
     function buildTestData() {
-      let seed = 20240917;
-      const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
       const now = Date.now();
-      const day = 86400000;
       const people = ['Camille', 'Louis', 'Emma', 'Léo', 'Compte joint'].map((name, i) => ({ id: `p${i + 1}`, name, updatedAt: now }));
-      const care = [
-        ['Médecin généraliste', 'Consultation', 30, .7], ['Pédiatre', 'Vaccin', 35, .7], ['Dentiste', 'Détartrage', 60, .7], ['Dentiste', 'Couronne', 520, .2],
-        ['Ostéopathe', '', 60, 0], ['Kinésithérapeute', '5 séances genou', 82, .6], ['Pharmacie', '', 24.6, .65], ['Ophtalmologue', 'Contrôle annuel', 55, .7],
-        ['Opticien / lunettes', 'Lunettes', 380, .02], ['Échographie', '', 95, .7], ['Analyses laboratoire', 'Bilan sanguin', 42.3, .6], ['Dermatologue', '', 50, .7],
-        ['Orthophoniste', 'Bilan', 36, .6], ['Radiologie', 'Radio du poignet', 48, .7], ['Psychologue', '', 55, 0]
+      const rows = [
+        ['Ostéo', 'p3', 60, '2026-10-28', 'p5', null, '', null, '', 'na', ''],
+        ['Dentiste détartrage', 'p1', 60, '2026-10-20', 'p1', 42, 'secu', null, '', 'na', 'Feuille envoyée'],
+        ['Pédiatre vaccin', 'p4', 35, '2026-10-02', 'p5', 24.5, 'secu', 10.5, '2026-10-15', 'na', ''],
+        ['Lunettes', 'p2', 380.4, '2026-09-14', 'p2', 0.09, 'us', 200, '2026-09-30', 'todo', 'Devis transmis'],
+        ['Kiné 5 séances genou', 'p1', 82, '2026-08-03', 'p5', 49.2, 'secu', 32.8, '2026-08-20', 'done', ''],
+        ['Pharmacie', 'p3', 24.6, '2025-12-12', 'p5', 16, 'secu', 8.6, '2025-12-28', 'na', ''],
+        ['Médecin généraliste', 'p2', 30, '2025-11-05', 'p2', 20, 'secu', 10, '2025-11-20', 'done', '']
       ];
-      const notes = ['Feuille de soins envoyée à la sécu', 'Dépassement d’honoraires', 'Relancer la mutuelle', 'Devis transmis à la mutuelle'];
-      const total = 60;
-      const start = now - 600 * day;
-      const expenses = [];
-      for (let i = 0; i < total; i++) {
-        const [type, motif, base, rate] = care[Math.floor(rnd() * care.length)];
-        const date = isoDate(new Date(start + Math.round(i / (total - 1) * 590) * day + Math.floor(rnd() * 5) * day));
-        const amount = base < 100 ? base : round2(base * (0.9 + rnd() * 0.25));
-        const payer = ['p1', 'p2', 'p5'][Math.floor(rnd() * 3)];
-        let secu = round2(amount * rate);
-        let mutuelle = rate === 0 ? round2(Math.min(amount, 40)) : round2((amount - secu) * (rnd() < 0.7 ? 1 : 0.6));
-        let transmission = rate > 0 ? 'secu' : 'us';
-        const emitted = new Date(`${date}T12:00:00`);
-        emitted.setDate(emitted.getDate() + 8 + Math.floor(rnd() * 20));
-        let mutuelleDate = emitted.getTime() < now ? isoDate(emitted) : '';
-        let reversement = payer === 'p1' ? 'done' : 'na';
-        if (i >= 40) {
-          const stage = i % 4;
-          if (stage === 0) { secu = null; mutuelle = null; transmission = ''; mutuelleDate = ''; }
-          if (stage === 1 || stage === 3) { mutuelle = null; mutuelleDate = ''; }
-          if (stage === 3) transmission = 'us';
-          if (stage === 2) reversement = 'todo';
-          else if (payer === 'p1') reversement = 'todo';
-        } else if (i % 10 === 3) {
-          reversement = 'todo';
-        }
-        expenses.push({
-          id: `t${i + 1}`, type, motif, patient: `p${1 + Math.floor(rnd() * 4)}`, payer, date, amount, secu, transmission,
-          mutuelle, mutuelleDate, reversement, notes: i % 7 === 0 ? notes[i % notes.length] : '', closed: false,
-          createdAt: now, updatedAt: now
-        });
-      }
-      return { version: 1, ts: now, people, motifs: defaultMotifs(), expenses, deleted: {} };
+      const expenses = rows.map(([motif, patient, amount, date, payer, secu, transmission, mutuelle, mutuelleDate, reversement, notes], i) => ({
+        id: `t${i + 1}`, type: '', motif, patient, amount, date, payer, secu, transmission, mutuelle, mutuelleDate, reversement, notes,
+        closed: false, createdAt: now, updatedAt: now
+      }));
+      return { version: 1, ts: now, people, motifs: [], expenses, deleted: {} };
     }
 
     let data = TEST_MODE ? buildTestData() : loadData();
-    const state = { view: 'todo', person: '', search: '', step: 'all', year: null };
+    let filter = 'todo';
 
     function persist() {
       data.ts = Date.now();
@@ -723,220 +368,104 @@
       scheduleSync();
     }
 
-    /* ---------- Statut d'un soin ---------- */
+    /* ---------- Statut ---------- */
     function status(e) {
-      const secu = e.secu !== null && e.secu !== undefined;
-      const mut = e.mutuelle !== null && e.mutuelle !== undefined;
+      const secu = has(e.secu);
+      const mut = has(e.mutuelle);
       const rev = e.reversement !== 'todo';
       return { secu, mut, rev, done: Boolean(e.closed) || (secu && mut && rev) };
     }
 
-    function received(e) {
-      return round2((e.secu || 0) + (e.mutuelle || 0));
+    const rest = e => has(e.amount) ? round2(e.amount - (e.secu || 0) - (e.mutuelle || 0)) : 0;
+    const motifText = e => [e.type, e.motif].filter(Boolean).join(' – ');
+    const personName = id => (data.people.find(p => p.id === id) || {}).name || '';
+    const sortedPeople = () => data.people.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    const byDateDesc = (a, b) => (b.date || '9999').localeCompare(a.date || '9999') || (b.createdAt || 0) - (a.createdAt || 0);
+
+    // Initiale du prénom ; « CJ » pour un compte joint (« Compte joint », « CJ Renelo »…).
+    function shortNames() {
+      const map = {};
+      data.people.forEach(p => {
+        const name = p.name.trim();
+        const first = name.split(/\s+/)[0] || '';
+        map[p.id] = norm(name).startsWith('compte joint') ? 'CJ'
+          : /^[A-Z]{2,3}$/.test(first) ? first
+          : first.charAt(0).toUpperCase();
+      });
+      return map;
     }
 
-    function rest(e) {
-      return e.amount === null || e.amount === undefined ? null : round2(e.amount - received(e));
-    }
-
-    function personName(id) {
-      const person = data.people.find(p => p.id === id);
-      return person ? person.name : '';
-    }
-
-    function sortedPeople() {
-      return data.people.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-    }
-
-    function sortedMotifs() {
-      return data.motifs.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-    }
-
-    const byDateDesc = (a, b) => (b.date || '').localeCompare(a.date || '') || (b.updatedAt || 0) - (a.updatedAt || 0);
-
-    function matchesFilters(e) {
-      if (state.person && e.patient !== state.person) return false;
-      const query = norm(state.search);
+    function matchesSearch(e) {
+      const query = norm($('searchInput').value);
       if (!query) return true;
-      return norm([e.type, e.motif, e.notes, personName(e.patient), personName(e.payer), e.amount, formatDate(e.date)].join(' ')).includes(query);
+      return norm([motifText(e), e.notes, personName(e.patient), personName(e.payer), e.amount, num(e.amount), e.date, shortDate(e.date),
+        e.date ? `${shortDate(e.date)}/${e.date.slice(0, 4)}` : '', shortDate(e.mutuelleDate)].join(' ')).includes(query);
     }
 
-    /* ---------- Rendu ---------- */
-    function pill(ok, label) {
-      return `<span class="step ${ok ? 'ok' : 'wait'}">${icon(ok ? 'i-check' : 'i-clock')}${escapeHtml(label)}</span>`;
+    /* ---------- Liste ---------- */
+    function cell(value, missing, waiting) {
+      if (has(value)) return `<span class="num">${num(value)}</span>`;
+      if (waiting) return '<span class="num wait" title="Transmis, en attente">…</span>';
+      return missing ? '<span class="num miss" title="À compléter">?</span>' : '<span></span>';
     }
 
-    function stepsHtml(e) {
+    function rowHtml(e, short) {
       const s = status(e);
-      const steps = [
-        pill(s.secu, s.secu ? `Sécu ${euro(e.secu)}` : 'Sécu'),
-        pill(s.mut, s.mut ? `Mutuelle ${euro(e.mutuelle)}` : e.transmission ? 'Mutuelle · transmis' : 'Mutuelle')
-      ];
-      if (e.reversement && e.reversement !== 'na') steps.push(pill(e.reversement === 'done', e.reversement === 'done' ? 'Reversé' : 'À reverser'));
-      if (e.closed) steps.push('<span class="step closed">Clôturé</span>');
-      return steps.join('');
-    }
-
-    function itemHtml(e, withActions = false) {
-      const remaining = rest(e);
-      const patient = personName(e.patient);
-      const payer = personName(e.payer);
-      const canReverse = withActions && e.reversement === 'todo';
-      const foot = (remaining === null ? '' : `<span class="item-rest">Reste à charge<b>${euro(remaining)}</b></span>`)
-        + (canReverse ? `<button type="button" class="item-action" data-reverse="${escapeHtml(e.id)}">${icon('i-check')}Marquer reversé</button>` : '');
-      const title = e.type || e.motif || 'Sans motif';
-      const subtitle = e.type && e.motif ? `<span class="item-sub">${escapeHtml(e.motif)}</span>` : '';
-      return `<div class="item" data-id="${escapeHtml(e.id)}" tabindex="0" aria-label="${escapeHtml(`${[e.type, e.motif].filter(Boolean).join(' – ') || 'Sans motif'}, ${euro(e.amount)}`)}">
-        <span class="item-top"><span class="item-title">${escapeHtml(title)}${subtitle}</span><span class="item-amount">${euro(e.amount)}</span></span>
-        <span class="item-meta">${patient ? `<span class="person">${escapeHtml(patient)}</span>` : ''}<span>${formatDate(e.date)}</span>${payer ? `<span>· payé par ${escapeHtml(payer)}</span>` : ''}</span>
-        <span class="steps">${stepsHtml(e)}</span>
-        ${e.notes ? `<span class="item-notes">${icon('i-note')}<span>${escapeHtml(e.notes)}</span></span>` : ''}
-        ${foot ? `<span class="item-foot">${foot}</span>` : ''}
+      const infos = [
+        e.transmission === 'secu' ? 'Transmis sécu' : e.transmission === 'us' ? 'Transmis par nous' : '',
+        e.mutuelleDate ? `Émis ${shortDate(e.mutuelleDate)}` : '',
+        e.notes || ''
+      ].filter(Boolean).join(' · ');
+      const rev = e.reversement === 'done' ? '<span class="ok" title="Reversé">✓</span>'
+        : e.reversement === 'todo' ? '<span class="miss" title="À reverser">!</span>' : '<span></span>';
+      return `<div class="grid row${s.done ? '' : ' todo'}" data-id="${escapeHtml(e.id)}" role="button" tabindex="0">
+        <div class="motif"><b>${escapeHtml(motifText(e) || 'Sans motif')}</b>${infos ? `<small>${escapeHtml(infos)}</small>` : ''}</div>
+        <span class="ini" title="${escapeHtml(personName(e.patient))}">${escapeHtml(short[e.patient] || '')}</span>
+        <span class="num">${num(e.amount)}</span>
+        <span class="date">${shortDate(e.date)}</span>
+        <span class="ini" title="${escapeHtml(personName(e.payer))}">${escapeHtml(short[e.payer] || '')}</span>
+        ${cell(e.secu, !e.closed, false)}
+        ${cell(e.mutuelle, !e.closed, Boolean(e.transmission))}
+        ${rev}
       </div>`;
     }
 
-    function statHtml(label, value, cls = '') {
-      return `<div class="stat ${cls}"><div class="stat-label">${label}</div><div class="stat-value" title="${escapeHtml(value)}">${escapeHtml(value)}</div></div>`;
-    }
-
-    function emptyHtml(message, iconId = 'i-done') {
-      return `<div class="empty">${icon(iconId)}<span>${escapeHtml(message)}</span></div>`;
-    }
-
-    function chipHtml(attr, value, label, pressed, count) {
-      return `<button type="button" class="chip" data-${attr}="${escapeHtml(value)}" aria-pressed="${pressed}">${escapeHtml(label)}${count === undefined ? '' : ` <span class="chip-count">${count}</span>`}</button>`;
-    }
-
-    function renderFilters() {
-      if (state.person && !data.people.some(p => p.id === state.person)) state.person = '';
-      $('personChips').innerHTML = chipHtml('person', '', 'Tout le monde', !state.person)
-        + sortedPeople().map(p => chipHtml('person', p.id, p.name, state.person === p.id)).join('');
-      $('personChips').hidden = data.people.length === 0;
-    }
-
-    function pendingStep(e, step) {
-      const s = status(e);
-      return step === 'all' || (step === 'secu' && !s.secu) || (step === 'mut' && !s.mut) || (step === 'rev' && e.reversement === 'todo');
-    }
-
-    function renderTodo() {
-      const all = data.expenses.filter(e => !status(e).done);
-      const base = all.filter(matchesFilters);
-      const counts = Object.fromEntries(['all', 'secu', 'mut', 'rev'].map(step => [step, base.filter(e => pendingStep(e, step)).length]));
-      const list = base.filter(e => pendingStep(e, state.step)).sort(byDateDesc);
-      const waiting = base.filter(e => !status(e).secu || !status(e).mut).reduce((sum, e) => sum + Math.max(0, rest(e) || 0), 0);
-      const toTransfer = base.filter(e => e.reversement === 'todo').reduce((sum, e) => sum + (e.mutuelle || 0), 0);
-      $('todoStats').innerHTML = statHtml('À compléter', String(base.length), 'accent')
-        + statHtml('Remb. en attente', euro(round2(waiting)), 'warn')
-        + statHtml('À reverser', euro(round2(toTransfer)));
-      $('stepChips').innerHTML = [['all', 'Tous'], ['secu', 'Sécu'], ['mut', 'Mutuelle'], ['rev', 'Reversement']]
-        .map(([key, label]) => chipHtml('step', key, label, state.step === key, counts[key])).join('');
-      $('bulkBar').hidden = !(state.step === 'rev' && list.length);
-      $('bulkLabel').textContent = `${list.length} à reverser · ${euro(round2(toTransfer))}`;
-      $('todoList').innerHTML = list.length ? list.map(e => itemHtml(e, true)).join('')
-        : emptyHtml(all.length ? 'Aucun soin pour ces filtres.' : data.expenses.length ? 'Tout est à jour !' : 'Aucun soin pour l’instant. Touchez « Ajouter un soin ».',
-          all.length || !data.expenses.length ? 'i-inbox' : 'i-done');
-    }
-
-    function monthLabel(key) {
-      if (!key) return 'Sans date';
-      const [y, m] = key.split('-').map(Number);
-      const label = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      return label.charAt(0).toUpperCase() + label.slice(1);
-    }
-
-    function renderDone() {
-      const allDone = data.expenses.filter(e => status(e).done);
-      const years = [...new Set(allDone.map(e => (e.date || '').slice(0, 4)).filter(Boolean))].sort().reverse();
-      if (state.year === null || (state.year !== 'all' && !years.includes(state.year))) state.year = years[0] || 'all';
-      const list = allDone.filter(matchesFilters).filter(e => state.year === 'all' || (e.date || '').startsWith(state.year)).sort(byDateDesc);
-      $('yearChips').innerHTML = years.map(y => chipHtml('year', y, y, state.year === y)).join('') + chipHtml('year', 'all', 'Toutes', state.year === 'all');
-      const spent = list.reduce((sum, e) => sum + (e.amount || 0), 0);
-      const refunded = list.reduce((sum, e) => sum + received(e), 0);
-      const remaining = list.reduce((sum, e) => sum + (rest(e) || 0), 0);
-      $('doneStats').innerHTML = statHtml('Dépensé', euro(round2(spent))) + statHtml('Remboursé', euro(round2(refunded)), 'ok')
-        + statHtml('Reste à charge', euro(round2(remaining)), 'accent');
+    function render() {
+      const short = shortNames();
+      const todo = data.expenses.filter(e => !status(e).done);
+      $('todoCount').textContent = todo.length;
+      $('todoCount').hidden = !todo.length;
+      document.querySelectorAll('[data-filter]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
+      const base = filter === 'todo' ? todo : data.expenses;
+      const list = base.filter(matchesSearch).sort(byDateDesc);
       if (!list.length) {
-        $('doneList').innerHTML = emptyHtml(allDone.length ? 'Aucun soin pour ces filtres.' : 'Aucun soin terminé pour l’instant.', 'i-done');
+        const message = base.length ? 'Aucun résultat.' : filter === 'todo' && data.expenses.length ? 'Tout est à jour ✓' : 'Aucun soin. Touchez + pour en ajouter un.';
+        $('list').innerHTML = `<div class="empty">${message}</div>`;
         return;
       }
       const groups = new Map();
       list.forEach(e => {
-        const key = (e.date || '').slice(0, 7);
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(e);
+        const year = (e.date || '').slice(0, 4) || 'Sans date';
+        if (!groups.has(year)) groups.set(year, []);
+        groups.get(year).push(e);
       });
-      $('doneList').innerHTML = [...groups].map(([key, items]) =>
-        `<div class="group-title"><span>${escapeHtml(monthLabel(key))}</span><span>${euro(round2(items.reduce((s, e) => s + (e.amount || 0), 0)))}</span></div>`
-        + items.map(e => itemHtml(e)).join('')).join('');
-    }
-
-    function renderPeople() {
-      const people = sortedPeople();
-      $('peopleList').innerHTML = people.length ? people.map(p => {
-        const used = data.expenses.filter(e => e.patient === p.id || e.payer === p.id).length;
-        return `<li>
-          <input value="${escapeHtml(p.name)}" maxlength="40" data-person-id="${escapeHtml(p.id)}" aria-label="Nom de ${escapeHtml(p.name)}">
-          <span class="usage">${used} soin${used > 1 ? 's' : ''}</span>
-          <button type="button" class="icon-btn" data-remove-person="${escapeHtml(p.id)}" aria-label="Supprimer ${escapeHtml(p.name)}">${icon('i-trash')}</button>
-        </li>`;
-      }).join('') : '<li class="usage">Aucune personne. Ajoutez les membres de la famille ci-dessous.</li>';
-    }
-
-    function renderMotifTypes() {
-      const motifs = sortedMotifs();
-      $('motifTypeList').innerHTML = motifs.length ? motifs.map(m => {
-        const used = data.expenses.filter(e => norm(e.type) === norm(m.name)).length;
-        return `<li>
-          <input value="${escapeHtml(m.name)}" maxlength="120" data-motif-id="${escapeHtml(m.id)}" aria-label="Type ${escapeHtml(m.name)}">
-          <span class="usage">${used} soin${used > 1 ? 's' : ''}</span>
-          <button type="button" class="icon-btn" data-remove-motif="${escapeHtml(m.id)}" aria-label="Supprimer ${escapeHtml(m.name)}">${icon('i-trash')}</button>
-        </li>`;
-      }).join('') : '<li class="usage">Aucun type. Ajoutez-en ci-dessous.</li>';
-    }
-
-    function renderNav() {
-      const count = data.expenses.filter(e => !status(e).done).length;
-      $('todoBadge').textContent = count > 99 ? '99+' : String(count);
-      $('todoBadge').hidden = count === 0;
-    }
-
-    function renderLists() {
-      renderTodo();
-      renderDone();
-    }
-
-    function render() {
-      renderFilters();
-      renderLists();
-      renderPeople();
-      renderMotifTypes();
-      renderNav();
-    }
-
-    function setView(view) {
-      state.view = view;
-      document.querySelectorAll('.view').forEach(section => section.classList.toggle('active', section.id === `view-${view}`));
-      document.querySelectorAll('.nav-btn').forEach(button => {
-        const active = button.dataset.view === view;
-        button.classList.toggle('active', active);
-        if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
-      });
-      $('filters').hidden = view === 'settings';
-      $('fab').hidden = view === 'settings';
-      window.scrollTo({ top: 0 });
+      $('list').innerHTML = [...groups].map(([year, items]) => {
+        const spent = items.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const left = items.reduce((sum, e) => sum + rest(e), 0);
+        return `<div class="year"><span>${escapeHtml(year)}</span><small>${euro(spent)} · reste ${euro(left)}</small></div>`
+          + items.map(e => rowHtml(e, short)).join('');
+      }).join('');
     }
 
     let toastTimer = 0;
     function showToast(message) {
-      const toast = $('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
+      $('toast').textContent = message;
+      $('toast').classList.add('show');
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+      toastTimer = setTimeout(() => $('toast').classList.remove('show'), 2400);
     }
 
-    /* ---------- Feuilles modales + bouton retour Android ---------- */
+    /* ---------- Feuilles + bouton retour Android ---------- */
     const sheetStack = [];
     let skipPop = 0;
 
@@ -946,7 +475,7 @@
       history.pushState({ sheet: dialog.id }, '');
     }
 
-    document.querySelectorAll('dialog[data-history]').forEach(dialog => {
+    document.querySelectorAll('dialog.sheet').forEach(dialog => {
       dialog.addEventListener('close', () => {
         const index = sheetStack.indexOf(dialog);
         if (index < 0) return;
@@ -954,58 +483,84 @@
         skipPop++;
         history.back();
       });
-    });
-
-    window.addEventListener('popstate', () => {
-      if (skipPop > 0) {
-        skipPop--;
-        return;
-      }
-      const top = sheetStack.pop();
-      if (top && top.open) top.close();
-    });
-
-    document.querySelectorAll('dialog.sheet').forEach(dialog => {
       dialog.addEventListener('click', event => {
         if (event.target === dialog) dialog.close();
       });
     });
 
-    function askConfirm(message, okLabel = 'Confirmer') {
-      return new Promise(resolve => {
-        const dialog = $('confirmDialog');
-        $('confirmMessage').textContent = message;
-        $('confirmOk').textContent = okLabel;
-        dialog.returnValue = '';
-        dialog.addEventListener('close', () => resolve(dialog.returnValue === 'ok'), { once: true });
-        dialog.showModal();
-      });
-    }
+    window.addEventListener('popstate', () => {
+      if (skipPop > 0) { skipPop--; return; }
+      const top = sheetStack.pop();
+      if (top && top.open) top.close();
+    });
 
-    /* ---------- Formulaire soin ---------- */
+    /* ---------- Formulaire ---------- */
     let editingId = null;
-    let addPersonTarget = 'patient';
-
-    const amountToInput = value => value === null || value === undefined ? '' : String(value).replace('.', ',');
-    const radioValue = name => (document.querySelector(`#expenseForm input[name="${name}"]:checked`) || {}).value || '';
+    const amountToInput = value => has(value) ? String(value).replace('.', ',') : '';
+    const radioValue = name => (document.querySelector(`#form input[name="${name}"]:checked`) || {}).value || '';
 
     function setRadio(name, value) {
-      document.querySelectorAll(`#expenseForm input[name="${name}"]`).forEach(input => { input.checked = input.value === value; });
+      document.querySelectorAll(`#form input[name="${name}"]`).forEach(input => { input.checked = input.value === value; });
     }
 
-    function pickHtml(name, selected) {
-      return sortedPeople().map(p => `<label class="pick-chip"><input type="radio" name="${name}" value="${escapeHtml(p.id)}"${p.id === selected ? ' checked' : ''}><span>${escapeHtml(p.name)}</span></label>`).join('')
-        + `<button type="button" class="pick-add" data-add-person="${name}">${icon('i-plus')}<span>${data.people.length ? 'Ajouter' : 'Ajouter une personne'}</span></button>`;
+    function renderPick(name, selected) {
+      $(`${name}Pick`).innerHTML = sortedPeople().map(p =>
+        `<label><input type="radio" name="${name}" value="${escapeHtml(p.id)}"${p.id === selected ? ' checked' : ''}><span>${escapeHtml(p.name)}</span></label>`).join('')
+        + `<button type="button" data-add-person="${name}" aria-label="Ajouter une personne">+</button>`;
     }
 
-    function renderPicks(patient, payer) {
-      $('patientPick').innerHTML = pickHtml('patient', patient);
-      $('payerPick').innerHTML = pickHtml('payer', payer);
+    function markMissing() {
+      $('secuField').classList.toggle('missing', !$('fSecu').value.trim());
+      $('mutField').classList.toggle('missing', !$('fMutuelle').value.trim());
+      $('revField').classList.toggle('missing', radioValue('reversement') === 'todo');
     }
 
-    function readForm() {
+    function openEdit(id) {
+      const e = id ? data.expenses.find(x => x.id === id) : null;
+      if (id && !e) return;
+      editingId = e ? e.id : null;
+      $('editTitle').textContent = e ? 'Compléter le soin' : 'Nouveau soin';
+      $('fMotif').value = e ? motifText(e) : '';
+      $('fAmount').value = amountToInput(e && e.amount);
+      $('fDate').value = e ? e.date || '' : isoDate();
+      $('fSecu').value = amountToInput(e && e.secu);
+      $('fMutuelle').value = amountToInput(e && e.mutuelle);
+      $('fMutuelleDate').value = e ? e.mutuelleDate || '' : '';
+      $('fNotes').value = e ? e.notes || '' : '';
+      const lastPayer = localStorage.getItem(LAST_PAYER_KEY) || '';
+      renderPick('patient', e ? e.patient : '');
+      renderPick('payer', e ? e.payer : data.people.some(p => p.id === lastPayer) ? lastPayer : '');
+      setRadio('transmission', e ? e.transmission || '' : '');
+      setRadio('reversement', e ? e.reversement || 'na' : 'na');
+      $('deleteBtn').hidden = !e;
+      $('formError').textContent = '';
+      const seen = new Set();
+      $('motifList').innerHTML = data.expenses.slice().sort(byDateDesc).map(motifText)
+        .filter(m => m && !seen.has(norm(m)) && seen.add(norm(m))).slice(0, 60)
+        .map(m => `<option value="${escapeHtml(m)}"></option>`).join('');
+      markMissing();
+      openSheet($('editSheet'));
+      $('form').querySelector('.sheet-body').scrollTop = 0;
+      if (!e) $('fMotif').focus();
+      else if (!has(e.secu)) $('fSecu').focus();
+      else if (!has(e.mutuelle)) $('fMutuelle').focus();
+    }
+
+    $('form').addEventListener('input', markMissing);
+    $('form').addEventListener('change', markMissing);
+
+    document.querySelectorAll('[data-zero]').forEach(button => button.addEventListener('click', () => {
+      $(button.dataset.zero).value = '0';
+      markMissing();
+    }));
+    $('todayBtn').addEventListener('click', () => { $('fMutuelleDate').value = isoDate(); });
+
+    $('form').addEventListener('submit', event => {
+      event.preventDefault();
+      const invalid = [['fAmount', 'Montant'], ['fSecu', 'Sécu'], ['fMutuelle', 'Mutuelle']]
+        .find(([id]) => $(id).value.trim() !== '' && parseAmount($(id).value) === null);
       const values = {
-        type: $('fType').value.trim(),
+        type: '',
         motif: $('fMotif').value.trim(),
         patient: radioValue('patient'),
         payer: radioValue('payer'),
@@ -1016,184 +571,31 @@
         mutuelle: parseAmount($('fMutuelle').value),
         mutuelleDate: $('fMutuelleDate').value,
         reversement: radioValue('reversement') || 'na',
-        notes: $('fNotes').value.trim(),
-        closed: $('fClosed').checked
+        notes: $('fNotes').value.trim()
       };
-      const invalid = [['fAmount', 'Montant'], ['fSecu', 'Sécurité sociale'], ['fMutuelle', 'Mutuelle']]
-        .find(([id]) => $(id).value.trim() !== '' && parseAmount($(id).value) === null);
-      let error = '';
-      if (!values.type && !values.motif) error = 'Indiquez le type d’acte ou le motif du soin.';
-      else if (invalid) error = `Montant invalide : ${invalid[1]}.`;
-      return { values, error };
-    }
-
-    function updateFormStatus() {
-      const { values } = readForm();
-      const remaining = rest(values);
-      $('fRest').textContent = remaining === null ? '—' : euro(remaining);
-      const s = status(values);
-      $('fStatus').innerHTML = s.done ? pill(true, 'Terminé') : stepsHtml(values);
-    }
-
-    function openExpense(id) {
-      const e = id ? data.expenses.find(x => x.id === id) : null;
-      if (id && !e) return;
-      editingId = e ? e.id : null;
-      $('expenseTitle').textContent = e ? 'Modifier le soin' : 'Nouveau soin';
-      $('fType').value = e ? e.type || '' : '';
-      $('fMotif').value = e ? e.motif || '' : '';
-      $('fDate').value = e ? e.date || '' : isoDate();
-      $('fAmount').value = amountToInput(e && e.amount);
-      $('fSecu').value = amountToInput(e && e.secu);
-      $('fMutuelle').value = amountToInput(e && e.mutuelle);
-      $('fMutuelleDate').value = e ? e.mutuelleDate || '' : '';
-      $('fNotes').value = e ? e.notes || '' : '';
-      $('fClosed').checked = Boolean(e && e.closed);
-      const lastPayer = localStorage.getItem(LAST_PAYER_KEY) || '';
-      renderPicks(e ? e.patient : state.person, e ? e.payer : data.people.some(p => p.id === lastPayer) ? lastPayer : '');
-      setRadio('transmission', e ? e.transmission || '' : '');
-      setRadio('reversement', e ? e.reversement || 'na' : 'na');
-      $('deleteBtn').hidden = !e;
-      $('formError').textContent = '';
-      $('addPersonRow').hidden = true;
-      hideMotifSuggest();
-      updateFormStatus();
-      openSheet($('expenseSheet'));
-      $('expenseForm').scrollTop = 0;
-    }
-
-    /* ---------- Type d'acte : autocomplétion ---------- */
-    const plain = value => String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-    function motifOptions() {
-      const options = sortedMotifs().map(m => ({ name: m.name, type: true }));
-      const seen = new Set(options.map(o => norm(o.name)));
-      data.expenses.slice().sort(byDateDesc).forEach(e => {
-        const key = norm(e.type);
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          options.push({ name: e.type.trim(), type: false });
-        }
-      });
-      return options;
-    }
-
-    function highlight(name, query) {
-      const index = query ? plain(name).indexOf(query) : -1;
-      if (index < 0) return escapeHtml(name);
-      return escapeHtml(name.slice(0, index)) + `<mark>${escapeHtml(name.slice(index, index + query.length))}</mark>` + escapeHtml(name.slice(index + query.length));
-    }
-
-    function hideMotifSuggest() {
-      $('typeSuggest').hidden = true;
-      $('fType').setAttribute('aria-expanded', 'false');
-    }
-
-    function renderMotifSuggest() {
-      const typed = $('fType').value.trim();
-      const query = plain(typed);
-      const matches = motifOptions()
-        .filter(o => plain(o.name).includes(query) && norm(o.name) !== norm(typed))
-        .sort((a, b) => Number(!plain(a.name).startsWith(query)) - Number(!plain(b.name).startsWith(query)))
-        .slice(0, 40);
-      const canAdd = typed && !data.motifs.some(m => norm(m.name) === norm(typed));
-      const html = matches.map(o => `<button type="button" class="suggest-item" role="option" data-motif-pick="${escapeHtml(o.name)}">
-          <span>${highlight(o.name, query)}</span>${o.type ? '' : '<small>déjà saisi</small>'}</button>`).join('')
-        + (canAdd ? `<button type="button" class="suggest-item suggest-add" data-motif-add>${icon('i-plus')}<span>Ajouter « ${escapeHtml(typed)} » aux types</span></button>` : '');
-      $('typeSuggest').innerHTML = html;
-      $('typeSuggest').hidden = !html;
-      $('fType').setAttribute('aria-expanded', String(Boolean(html)));
-    }
-
-    $('fType').addEventListener('focus', renderMotifSuggest);
-    $('fType').addEventListener('input', renderMotifSuggest);
-    $('fType').addEventListener('blur', hideMotifSuggest);
-    $('fType').addEventListener('keydown', event => {
-      if (event.key === 'Escape' && !$('typeSuggest').hidden) {
-        event.preventDefault();
-        event.stopPropagation();
-        hideMotifSuggest();
-      }
-    });
-    // Garde le focus dans le champ pendant le choix d'une suggestion.
-    $('typeSuggest').addEventListener('pointerdown', event => event.preventDefault());
-
-    function pickMotif(name) {
-      $('fType').value = name;
-      hideMotifSuggest();
-      updateFormStatus();
-    }
-
-    function addMotifType(rawName) {
-      const name = rawName.trim();
-      if (!name) return null;
-      if (data.motifs.some(m => norm(m.name) === norm(name))) {
-        showToast('Ce type existe déjà');
-        return null;
-      }
-      const motif = { id: uid(), name, updatedAt: Date.now() };
-      data.motifs.push(motif);
-      save();
-      return motif;
-    }
-
-    async function removeMotifType(id) {
-      const motif = data.motifs.find(m => m.id === id);
-      if (!motif || !await askConfirm(`Supprimer le type « ${motif.name} » ? Les soins existants ne sont pas modifiés.`, 'Supprimer')) return;
-      data.motifs = data.motifs.filter(m => m.id !== id);
-      data.deleted[id] = Date.now();
-      save();
-    }
-
-    async function markReversed(id) {
-      const e = data.expenses.find(x => x.id === id);
-      if (!e || e.reversement !== 'todo') return;
-      const payer = personName(e.payer);
-      const amount = e.mutuelle === null || e.mutuelle === undefined ? '' : ` (${euro(e.mutuelle)})`;
-      const message = `${e.type || e.motif || 'Soin'} du ${formatDate(e.date)} : le remboursement mutuelle${amount} a-t-il bien été reversé${payer ? ` à ${payer}` : ''} ?`;
-      if (!await askConfirm(message, 'Marquer reversé')) return;
-      e.reversement = 'done';
-      e.updatedAt = Date.now();
-      save();
-      showToast(status(e).done ? 'Reversé · soin terminé' : 'Marqué reversé');
-    }
-
-    $('expenseForm').addEventListener('input', updateFormStatus);
-    $('expenseForm').addEventListener('change', updateFormStatus);
-
-    $('expenseForm').addEventListener('submit', event => {
-      event.preventDefault();
-      const { values, error } = readForm();
-      if (error) {
-        $('formError').textContent = error;
-        return;
-      }
+      if (!values.motif) { $('formError').textContent = 'Indiquez le motif.'; $('fMotif').focus(); return; }
+      if (invalid) { $('formError').textContent = `Montant invalide : ${invalid[1]}.`; $(invalid[0]).focus(); return; }
       const now = Date.now();
       const existing = editingId && data.expenses.find(x => x.id === editingId);
       if (existing) Object.assign(existing, values, { updatedAt: now });
-      else data.expenses.push({ id: uid(), createdAt: now, updatedAt: now, ...values });
+      else data.expenses.push({ id: uid(), closed: false, createdAt: now, updatedAt: now, ...values });
       if (!TEST_MODE && values.payer) localStorage.setItem(LAST_PAYER_KEY, values.payer);
       save();
-      $('expenseSheet').close();
-      showToast(status(values).done ? 'Soin enregistré · terminé' : existing ? 'Soin mis à jour' : 'Soin ajouté');
+      $('editSheet').close();
+      showToast(status(existing || values).done ? 'Enregistré · complet ✓' : 'Enregistré');
     });
 
-    $('deleteBtn').addEventListener('click', async () => {
-      if (!editingId || !await askConfirm('Supprimer définitivement ce soin ?', 'Supprimer')) return;
+    $('deleteBtn').addEventListener('click', () => {
+      if (!editingId || !confirm('Supprimer ce soin ?')) return;
       data.expenses = data.expenses.filter(x => x.id !== editingId);
       data.deleted[editingId] = Date.now();
       save();
-      $('expenseSheet').close();
+      $('editSheet').close();
       showToast('Soin supprimé');
     });
 
-    document.querySelectorAll('[data-zero]').forEach(button => button.addEventListener('click', () => {
-      $(button.dataset.zero).value = '0';
-      updateFormStatus();
-    }));
-
     function addPerson(rawName) {
-      const name = rawName.trim();
+      const name = String(rawName || '').trim();
       if (!name) return null;
       if (data.people.some(p => norm(p.name) === norm(name))) {
         showToast('Cette personne existe déjà');
@@ -1205,91 +607,33 @@
       return person;
     }
 
-    function addPersonFromForm() {
-      const person = addPerson($('newPersonInput').value);
-      if (!person) return;
-      const patient = addPersonTarget === 'patient' ? person.id : radioValue('patient');
-      const payer = addPersonTarget === 'payer' ? person.id : radioValue('payer');
-      renderPicks(patient, payer);
-      $('newPersonInput').value = '';
-      $('addPersonRow').hidden = true;
-      updateFormStatus();
+    /* ---------- Réglages ---------- */
+    function renderPeople() {
+      const people = sortedPeople();
+      $('peopleList').innerHTML = people.length ? people.map(p => `<li>
+          <input type="text" value="${escapeHtml(p.name)}" maxlength="40" data-person-id="${escapeHtml(p.id)}" aria-label="Nom de ${escapeHtml(p.name)}">
+          <button type="button" class="icon-btn" data-remove-person="${escapeHtml(p.id)}" aria-label="Supprimer ${escapeHtml(p.name)}"><svg><use href="#i-trash"/></svg></button>
+        </li>`).join('') : '<li class="hint">Aucune personne.</li>';
     }
 
-    $('newPersonBtn').addEventListener('click', addPersonFromForm);
-    $('newPersonInput').addEventListener('keydown', event => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        addPersonFromForm();
-      }
-    });
-
-    /* ---------- Interactions générales ---------- */
-    document.addEventListener('click', event => {
-      const target = event.target.closest('button, [data-id]');
-      if (!target) return;
-      const ds = target.dataset;
-      if (ds.id) openExpense(ds.id);
-      else if (ds.view) setView(ds.view);
-      else if (ds.person !== undefined) { state.person = ds.person; renderFilters(); renderLists(); }
-      else if (ds.step) { state.step = ds.step; renderTodo(); }
-      else if (ds.year) { state.year = ds.year; renderDone(); }
-      else if (ds.addPerson) {
-        addPersonTarget = ds.addPerson;
-        const row = $('addPersonRow');
-        row.hidden = false;
-        target.closest('.field').after(row);
-        $('newPersonInput').focus();
-      }
-      else if (ds.removePerson) removePerson(ds.removePerson);
-      else if (ds.reverse) markReversed(ds.reverse);
-      else if (ds.motifPick !== undefined) pickMotif(ds.motifPick);
-      else if (ds.motifAdd !== undefined) {
-        if (addMotifType($('fType').value)) showToast('Type ajouté');
-        hideMotifSuggest();
-      }
-      else if (ds.removeMotif) removeMotifType(ds.removeMotif);
-      else if (ds.openDrive !== undefined) openSheet($('driveSheet'));
-      else if (ds.close !== undefined) target.closest('dialog').close();
-    });
-
-    document.addEventListener('keydown', event => {
-      const item = event.target.closest && event.target.closest('.item[data-id]');
-      if (item && event.target === item && (event.key === 'Enter' || event.key === ' ')) {
-        event.preventDefault();
-        openExpense(item.dataset.id);
-      }
-    });
-
-    $('fab').addEventListener('click', () => openExpense(null));
-    $('searchInput').addEventListener('input', event => {
-      state.search = event.target.value;
-      renderLists();
-    });
-
-    $('bulkReverseBtn').addEventListener('click', async () => {
-      const targets = data.expenses.filter(e => !status(e).done && e.reversement === 'todo' && matchesFilters(e));
-      if (!targets.length || !await askConfirm(`Marquer ${targets.length} soin(s) comme reversé(s) ?`, 'Marquer reversé')) return;
-      const now = Date.now();
-      targets.forEach(e => { e.reversement = 'done'; e.updatedAt = now; });
-      save();
-      showToast(`${targets.length} soin(s) marqué(s) reversé(s)`);
+    $('settingsBtn').addEventListener('click', () => {
+      renderPeople();
+      openSheet($('settingsSheet'));
     });
 
     $('addPersonForm').addEventListener('submit', event => {
       event.preventDefault();
       if (addPerson($('addPersonInput').value)) {
         $('addPersonInput').value = '';
-        showToast('Personne ajoutée');
+        renderPeople();
       }
     });
 
     $('peopleList').addEventListener('change', event => {
       const input = event.target.closest('input[data-person-id]');
-      if (!input) return;
-      const person = data.people.find(p => p.id === input.dataset.personId);
-      const name = input.value.trim();
+      const person = input && data.people.find(p => p.id === input.dataset.personId);
       if (!person) return;
+      const name = input.value.trim();
       if (!name || data.people.some(p => p.id !== person.id && norm(p.name) === norm(name))) {
         input.value = person.name;
         showToast(name ? 'Ce nom existe déjà' : 'Le nom ne peut pas être vide');
@@ -1298,53 +642,54 @@
       person.name = name;
       person.updatedAt = Date.now();
       save();
-      showToast('Nom mis à jour');
     });
 
-    $('addMotifForm').addEventListener('submit', event => {
-      event.preventDefault();
-      if (addMotifType($('addMotifInput').value)) {
-        $('addMotifInput').value = '';
-        showToast('Type ajouté');
-      }
-    });
-
-    $('motifTypeList').addEventListener('change', event => {
-      const input = event.target.closest('input[data-motif-id]');
-      if (!input) return;
-      const motif = data.motifs.find(m => m.id === input.dataset.motifId);
-      const name = input.value.trim();
-      if (!motif) return;
-      if (!name || data.motifs.some(m => m.id !== motif.id && norm(m.name) === norm(name))) {
-        input.value = motif.name;
-        showToast(name ? 'Ce type existe déjà' : 'Le nom ne peut pas être vide');
-        return;
-      }
-      motif.name = name;
-      motif.updatedAt = Date.now();
-      save();
-      showToast('Type mis à jour');
-    });
-
-    async function removePerson(id) {
+    function removePerson(id) {
       const person = data.people.find(p => p.id === id);
       if (!person) return;
       const used = data.expenses.filter(e => e.patient === id || e.payer === id).length;
-      if (used) {
-        showToast(`${person.name} est utilisé(e) dans ${used} soin(s) : suppression impossible`);
-        return;
-      }
-      if (!await askConfirm(`Supprimer ${person.name} ?`, 'Supprimer')) return;
+      if (used) { showToast(`${person.name} est utilisé(e) dans ${used} soin(s)`); return; }
+      if (!confirm(`Supprimer ${person.name} ?`)) return;
       data.people = data.people.filter(p => p.id !== id);
       data.deleted[id] = Date.now();
       save();
+      renderPeople();
     }
+
+    /* ---------- Interactions ---------- */
+    document.addEventListener('click', event => {
+      const target = event.target.closest('button, .row[data-id]');
+      if (!target) return;
+      const ds = target.dataset;
+      if (ds.id) openEdit(ds.id);
+      else if (ds.filter) { filter = ds.filter; render(); window.scrollTo({ top: 0 }); }
+      else if (ds.close !== undefined) target.closest('dialog').close();
+      else if (ds.removePerson) removePerson(ds.removePerson);
+      else if (ds.addPerson) {
+        const person = addPerson(prompt('Prénom de la personne'));
+        if (!person) return;
+        const patient = ds.addPerson === 'patient' ? person.id : radioValue('patient');
+        const payer = ds.addPerson === 'payer' ? person.id : radioValue('payer');
+        renderPick('patient', patient);
+        renderPick('payer', payer);
+      }
+    });
+
+    document.addEventListener('keydown', event => {
+      const row = event.target.closest && event.target.closest('.row[data-id]');
+      if (row && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        openEdit(row.dataset.id);
+      }
+    });
+
+    $('fab').addEventListener('click', () => openEdit(null));
+    $('searchInput').addEventListener('input', render);
 
     /* ---------- Sauvegarde JSON ---------- */
     $('exportBtn').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
       link.download = `suivi-sante-${isoDate()}.json`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(link.href), 1000);
@@ -1359,32 +704,14 @@
         if (!isData(parsed)) throw new Error('format');
         data = mergeData(data, normalizeData(parsed));
         save();
+        renderPeople();
         showToast('Sauvegarde restaurée');
       } catch (error) {
         showToast('Fichier de sauvegarde invalide');
       }
     });
 
-    $('wipeBtn').addEventListener('click', async () => {
-      const count = data.expenses.length;
-      if (!count && !data.people.length) {
-        showToast('Aucune donnée à supprimer');
-        return;
-      }
-      if (!await askConfirm(`Supprimer définitivement ${count} soin(s) et ${data.people.length} personne(s) ? Cette action est irréversible.`, 'Tout supprimer')) return;
-      const now = Date.now();
-      // Les marqueurs de suppression propagent l'effacement aux autres appareils via Drive.
-      [...data.expenses, ...data.people].forEach(record => { data.deleted[record.id] = now; });
-      data.expenses = [];
-      data.people = [];
-      state.person = '';
-      save();
-      showToast('Toutes les données ont été supprimées');
-    });
-
-    /* ---------- Import Excel / copier-coller ---------- */
-    let pendingImport = null;
-
+    /* ---------- Import Excel ---------- */
     async function readZipEntries(buffer, wanted) {
       const view = new DataView(buffer);
       const bytes = new Uint8Array(buffer);
@@ -1450,7 +777,7 @@
           else value = v && v.textContent !== '' ? Number(v.textContent) : '';
           cells[col] = value;
         });
-        return Array.from(cells, cell => cell ?? '');
+        return Array.from(cells, c => c ?? '');
       });
     }
 
@@ -1458,22 +785,22 @@
       const separator = text.includes('\t') ? '\t' : text.includes(';') ? ';' : ',';
       const rows = [];
       let row = [];
-      let cell = '';
+      let value = '';
       let quoted = false;
       for (let i = 0; i < text.length; i++) {
         const ch = text[i];
         if (quoted) {
-          if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+          if (ch === '"' && text[i + 1] === '"') { value += '"'; i++; }
           else if (ch === '"') quoted = false;
-          else cell += ch;
-        } else if (ch === '"' && cell === '') quoted = true;
-        else if (ch === separator) { row.push(cell); cell = ''; }
+          else value += ch;
+        } else if (ch === '"' && value === '') quoted = true;
+        else if (ch === separator) { row.push(value); value = ''; }
         else if (ch === '\n' || ch === '\r') {
           if (ch === '\r' && text[i + 1] === '\n') i++;
-          row.push(cell); rows.push(row); row = []; cell = '';
-        } else cell += ch;
+          row.push(value); rows.push(row); row = []; value = '';
+        } else value += ch;
       }
-      if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+      if (value !== '' || row.length) { row.push(value); rows.push(row); }
       return rows;
     }
 
@@ -1515,12 +842,12 @@
     }
 
     function prepareImport(rows) {
-      const headerIndex = rows.findIndex(r => r.some(cell => norm(cell).startsWith('motif')));
+      const headerIndex = rows.findIndex(r => r.some(c => norm(c).startsWith('motif')));
       let columns = { motif: 0, patient: 1, amount: 2, date: 3, payer: 4, secu: 5, transSecu: 6, transUs: 7, mutuelle: 8, mutuelleDate: 9, reverse: 10, notes: 12 };
       if (headerIndex >= 0) {
         columns = {};
-        rows[headerIndex].forEach((cell, i) => {
-          const key = headerKey(cell);
+        rows[headerIndex].forEach((c, i) => {
+          const key = headerKey(c);
           if (key && columns[key] === undefined) columns[key] = i;
         });
       }
@@ -1537,7 +864,7 @@
         }
         return person.id;
       };
-      const seen = new Set(data.expenses.map(e => expenseKey(e.date, e.motif, e.amount, personName(e.patient))));
+      const seen = new Set(data.expenses.map(e => expenseKey(e.date, motifText(e), e.amount, personName(e.patient))));
       const isYes = value => ['x', 'oui', 'o', 'yes', 'vrai', '1'].includes(norm(value));
       const isDash = value => String(value ?? '').trim() === '-';
       const expenses = [];
@@ -1557,7 +884,7 @@
         if (secu === null && mutuelle !== null) secu = 0;
         const reverse = norm(get('reverse'));
         expenses.push({
-          id: uid(), motif, patient: resolvePerson(get('patient')), payer: resolvePerson(get('payer')), date, amount, secu,
+          id: uid(), type: '', motif, patient: resolvePerson(get('patient')), payer: resolvePerson(get('payer')), date, amount, secu,
           transmission: isYes(get('transUs')) ? 'us' : isYes(get('transSecu')) ? 'secu' : '',
           mutuelle, mutuelleDate: parseDateValue(get('mutuelleDate')),
           reversement: reverse === 'oui' ? 'done' : reverse === 'non' ? 'todo' : 'na',
@@ -1568,54 +895,25 @@
       return { expenses, newPeople: newPeople.filter(p => usedIds.has(p.id)), duplicates };
     }
 
-    function showImportPreview(rows) {
-      pendingImport = prepareImport(rows);
-      const { expenses, newPeople, duplicates } = pendingImport;
-      const todo = expenses.filter(e => !status(e).done).length;
-      const preview = $('importPreview');
-      preview.hidden = false;
-      preview.innerHTML = expenses.length
-        ? `<div><strong>${expenses.length} soin(s) prêt(s) à importer</strong> : ${todo} à compléter, ${expenses.length - todo} terminé(s).</div>
-           ${newPeople.length ? `<div>Nouvelles personnes : ${newPeople.map(p => escapeHtml(p.name)).join(', ')}</div>` : ''}
-           ${duplicates ? `<div>${duplicates} doublon(s) ignoré(s).</div>` : ''}
-           <button type="button" class="btn btn-primary btn-block" id="importConfirmBtn">Importer</button>`
-        : `<div>Aucun nouveau soin détecté${duplicates ? ` (${duplicates} doublon(s) ignoré(s))` : ''}.</div>`;
-      const confirmButton = $('importConfirmBtn');
-      if (confirmButton) confirmButton.addEventListener('click', commitImport);
-    }
-
-    function commitImport() {
-      if (!pendingImport) return;
-      const { expenses, newPeople } = pendingImport;
-      data.people.push(...newPeople);
-      data.expenses.push(...expenses);
-      pendingImport = null;
-      $('importPreview').hidden = true;
-      $('importText').value = '';
-      save();
-      showToast(`${expenses.length} soin(s) importé(s)`);
-    }
-
     $('importFile').addEventListener('change', async event => {
       const file = event.target.files[0];
       event.target.value = '';
       if (!file) return;
       try {
         const rows = /\.xlsx$/i.test(file.name) ? await parseXlsx(await file.arrayBuffer()) : parseDelimited(await file.text());
-        showImportPreview(rows);
+        const { expenses, newPeople, duplicates } = prepareImport(rows);
+        const dup = duplicates ? ` (${duplicates} doublon(s) ignoré(s))` : '';
+        if (!expenses.length) { showToast(`Aucun nouveau soin${dup}`); return; }
+        if (!confirm(`Importer ${expenses.length} soin(s)${dup} ?`)) return;
+        data.people.push(...newPeople);
+        data.expenses.push(...expenses);
+        save();
+        renderPeople();
+        showToast(`${expenses.length} soin(s) importé(s)`);
       } catch (error) {
         console.error('[Suivi santé] Import impossible', error);
         showToast(error.message || 'Import impossible');
       }
-    });
-
-    $('analyzeBtn').addEventListener('click', () => {
-      const text = $('importText').value;
-      if (!text.trim()) {
-        showToast('Collez d’abord des cellules Excel');
-        return;
-      }
-      showImportPreview(parseDelimited(text));
     });
 
     /* ---------- Google Drive ---------- */
@@ -1628,40 +926,23 @@
     let syncAgain = false;
     let syncTimer = 0;
     let driveState = 'off';
-    let driveMessage = '';
     const tokenValid = () => Boolean(accessToken) && Date.now() < tokenExpiresAt;
-    const driveLabels = { on: 'Connecté', busy: 'Synchro…', off: 'Non connecté', test: 'Mode test', unconfigured: 'Non configuré' };
+    const driveLabels = { on: 'Connecté', busy: 'Synchro…', off: 'Non connecté', test: 'Mode test' };
 
     function setSync(mode, message) {
       driveState = mode;
-      driveMessage = message;
-      renderDrive();
-    }
-
-    function renderDrive() {
-      const label = driveLabels[driveState];
-      const chip = $('driveChip');
-      chip.className = `drive-chip ${driveState}`;
-      chip.setAttribute('aria-label', `Google Drive : ${label.toLowerCase()}`);
-      chip.title = `Google Drive : ${label.toLowerCase()}`;
-      $('driveChipLabel').textContent = label;
-      $('driveStatusPill').className = `drive-status-pill ${driveState}`;
-      $('driveTitle').textContent = driveState === 'on' || driveState === 'busy' ? 'Connecté à Google Drive' : label;
-      $('driveMessage').textContent = driveMessage;
-      $('driveFileName').textContent = DRIVE_FILE_NAME;
-      $('settingsDriveStatus').textContent = label;
-      const connectButton = $('driveConnectBtn');
-      connectButton.textContent = tokenValid() ? 'Synchroniser maintenant' : 'Se connecter à Google Drive';
-      connectButton.disabled = ['test', 'unconfigured', 'busy'].includes(driveState);
+      $('driveChip').className = `drive-chip ${mode}`;
+      $('driveChipLabel').textContent = driveLabels[mode];
+      $('driveChip').title = `Google Drive : ${message}`;
+      $('driveStatus').textContent = driveLabels[mode];
+      $('driveMessage').textContent = message;
+      $('driveConnectBtn').textContent = tokenValid() ? 'Synchroniser' : 'Se connecter';
+      $('driveConnectBtn').disabled = mode === 'test' || mode === 'busy';
       $('driveDisconnectBtn').hidden = !tokenValid();
     }
 
     function gsiReady() {
       if (TEST_MODE) return;
-      if (!GOOGLE_CLIENT_ID) {
-        setSync('unconfigured', 'Identifiant client OAuth non renseigné (TODO dans le code).');
-        return;
-      }
       if (!window.google || !google.accounts || !google.accounts.oauth2) {
         setSync('off', 'Service Google indisponible. Vérifiez la connexion Internet.');
         return;
@@ -1671,7 +952,7 @@
         scope: GOOGLE_DRIVE_SCOPE,
         callback: response => {
           if (response.error) {
-            setSync('off', 'Connexion refusée. Touchez « Se connecter » pour réessayer.');
+            setSync('off', 'Connexion refusée.');
             return;
           }
           accessToken = response.access_token;
@@ -1682,11 +963,11 @@
         },
         error_callback: () => {
           needsAuth = true;
-          setSync('off', 'Reconnexion nécessaire : touchez « Se connecter ».');
+          setSync('off', 'Reconnexion nécessaire.');
         }
       });
       if (localStorage.getItem(DRIVE_ENABLED_KEY) === '1') requestDriveToken();
-      else setSync('off', 'Connectez-vous pour partager les données via Google Drive.');
+      else setSync('off', 'Connectez-vous pour partager les données.');
     }
 
     function requestDriveToken() {
@@ -1703,13 +984,18 @@
       else requestDriveToken();
     });
 
+    $('driveChip').addEventListener('click', () => {
+      if (driveState === 'off' && tokenClient) requestDriveToken();
+      else $('settingsBtn').click();
+    });
+
     $('driveDisconnectBtn').addEventListener('click', () => {
       if (accessToken && window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(accessToken, () => {});
       accessToken = null;
       tokenExpiresAt = 0;
       needsAuth = false;
       localStorage.removeItem(DRIVE_ENABLED_KEY);
-      setSync('off', 'Déconnecté. Les données restent enregistrées sur cet appareil.');
+      setSync('off', 'Déconnecté. Les données restent sur cet appareil.');
     });
 
     function scheduleSync() {
@@ -1731,13 +1017,10 @@
 
     async function syncNow() {
       if (TEST_MODE) return;
-      if (syncBusy) {
-        syncAgain = true;
-        return;
-      }
+      if (syncBusy) { syncAgain = true; return; }
       if (!tokenValid()) {
         needsAuth = true;
-        setSync('off', 'Reconnexion nécessaire : touchez « Se connecter ».');
+        setSync('off', 'Reconnexion nécessaire.');
         return;
       }
       syncBusy = true;
@@ -1770,15 +1053,10 @@
         setSync('on', `Synchronisé à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}.`);
       } catch (error) {
         console.error('[Suivi santé] Synchronisation Google Drive impossible', error);
-        setSync('off', error.message === 'auth'
-          ? 'Reconnexion nécessaire : touchez « Se connecter ».'
-          : 'Erreur de synchronisation. Vérifiez la connexion Internet.');
+        setSync('off', error.message === 'auth' ? 'Reconnexion nécessaire.' : 'Erreur de synchronisation.');
       } finally {
         syncBusy = false;
-        if (syncAgain) {
-          syncAgain = false;
-          scheduleSync();
-        }
+        if (syncAgain) { syncAgain = false; scheduleSync(); }
       }
     }
 
@@ -1791,17 +1069,14 @@
     setInterval(() => {
       if (driveState === 'on' && !tokenValid()) {
         needsAuth = true;
-        setSync('off', 'Session expirée : touchez « Se connecter ».');
+        setSync('off', 'Session expirée.');
       }
     }, 60000);
 
     /* ---------- Démarrage ---------- */
     $('testBanner').hidden = !TEST_MODE;
-    if (TEST_MODE) setSync('test', 'Synchronisation désactivée en mode test (?test=1).');
-    else if (!GOOGLE_CLIENT_ID) setSync('unconfigured', 'Identifiant client OAuth non renseigné (TODO dans le code).');
-    else setSync('off', 'Chargement du service Google…');
+    setSync(TEST_MODE ? 'test' : 'off', TEST_MODE ? 'Synchronisation désactivée en mode test.' : 'Chargement du service Google…');
     render();
-    setView('todo');
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer onload="gsiReady()" onerror="gsiReady()"></script>
 </body>
