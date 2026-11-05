@@ -9,13 +9,14 @@
     :root {
       --bg: #f4f6f8; --card: #fff; --text: #1f2933; --muted: #6b7785; --line: #e3e7eb;
       --accent: #0f766e; --accent-soft: #e0f2f1; --warn: #d97706; --warn-soft: #fef3c7; --ok: #15803d; --danger: #b91c1c;
-      --cols: minmax(0, 1fr) 18px 48px 36px 18px 44px 44px 16px;
+      --cols: minmax(0, 1fr) 22px 46px 36px 22px 42px 44px 26px;
       --gap: 3px;
       --pad: 8px;
       --fs: 12.5px;
     }
     @media (max-width: 339px) {
-      :root { --cols: minmax(0, 1fr) 16px 40px 30px 16px 38px 38px 12px; --gap: 2px; --pad: 6px; --fs: 11px; }
+      :root { --cols: minmax(0, 1fr) 20px 40px 30px 20px 36px 40px 22px; --gap: 2px; --pad: 6px; --fs: 11px; }
+      .thead { font-size: 9px; }
     }
     @media (min-width: 480px) {
       :root { --cols: minmax(0, 1fr) 30px 70px 48px 30px 64px 64px 30px; --gap: 8px; }
@@ -45,7 +46,7 @@
     .search input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: var(--bg); font-size: 16px; }
     .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: #fff; }
     .grid { display: grid; grid-template-columns: var(--cols); column-gap: var(--gap); align-items: start; padding: 0 var(--pad); }
-    .thead { font-size: 10px; color: var(--muted); font-weight: 600; white-space: nowrap; padding-top: 4px; padding-bottom: 5px; }
+    .thead { font-size: 10px; line-height: 1.15; color: var(--muted); font-weight: 600; white-space: nowrap; padding-top: 4px; padding-bottom: 5px; align-items: end; }
     .thead span:not(:first-child), .row > span { text-align: center; }
     .thead .r, .row .num { text-align: right; }
 
@@ -63,6 +64,8 @@
     .miss { color: var(--warn); font-weight: 700; }
     .wait { color: var(--muted); }
     .ok { color: var(--ok); font-weight: 700; }
+    .no { color: var(--danger); font-weight: 700; }
+    .motif small .rest { color: var(--text); font-weight: 600; }
     .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
 
     .fab { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.25); display: grid; place-items: center; }
@@ -144,7 +147,7 @@
       </div>
     </div>
     <div class="grid thead" aria-hidden="true">
-      <span>Motif</span><span>Pour</span><span class="r">€</span><span>Date</span><span>Payé</span><span class="r">Sécu</span><span class="r">Mut.</span><span>Rev</span>
+      <span>Motif</span><span>Pour</span><span class="r">Montant</span><span>Date</span><span>Payé<br>par</span><span class="r">Remb.<br>sécu</span><span class="r">Remb.<br>mutuelle</span><span>Re-<br>versé</span>
     </div>
   </header>
 
@@ -415,15 +418,17 @@
 
     function rowHtml(e, short) {
       const s = status(e);
+      const left = s.secu && s.mut && has(e.amount) ? `<span class="rest">Reste ${escapeHtml(euro(rest(e)))}</span>` : '';
       const infos = [
         e.transmission === 'secu' ? 'Transmis sécu' : e.transmission === 'us' ? 'Transmis par nous' : '',
         e.mutuelleDate ? `Émis ${shortDate(e.mutuelleDate)}` : '',
         e.notes || ''
-      ].filter(Boolean).join(' · ');
+      ].filter(Boolean).map(escapeHtml);
+      if (left) infos.unshift(left);
       const rev = e.reversement === 'done' ? '<span class="ok" title="Reversé">✓</span>'
-        : e.reversement === 'todo' ? '<span class="miss" title="À reverser">!</span>' : '<span></span>';
+        : e.reversement === 'todo' ? '<span class="no" title="Pas encore reversé">✗</span>' : '<span></span>';
       return `<div class="grid row${s.done ? '' : ' todo'}" data-id="${escapeHtml(e.id)}" role="button" tabindex="0">
-        <div class="motif"><b>${escapeHtml(motifText(e) || 'Sans motif')}</b>${infos ? `<small>${escapeHtml(infos)}</small>` : ''}</div>
+        <div class="motif"><b>${escapeHtml(motifText(e) || 'Sans motif')}</b>${infos.length ? `<small>${infos.join(' · ')}</small>` : ''}</div>
         <span class="ini" title="${escapeHtml(personName(e.patient))}">${escapeHtml(short[e.patient] || '')}</span>
         <span class="num">${num(e.amount)}</span>
         <span class="date">${shortDate(e.date)}</span>
